@@ -1,98 +1,231 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Rooma 🏨
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+**Rooma** es un SaaS de gestión hotelera desarrollado por [NetVuk Interactive](https://netvuk.com), diseñado para hoteles boutique, cabañas y operadores turísticos en Colombia. Permite gestionar reservaciones, huéspedes, habitaciones, actividades, planes y pagos desde una sola plataforma.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## ✨ Características
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- 🔗 **Links de reserva únicos** — el admin genera un enlace personalizado y se lo envía al cliente para que registre sus datos
+- 🏠 **Gestión de habitaciones** — tipos de habitación, estados y asignación por huésped
+- 👥 **Gestión de huéspedes** — titular y acompañantes con requisitos (vacunas, declaraciones)
+- 🎯 **Actividades y eventos** — pasadías, rafting, senderismo con control de cupos y gastos operativos
+- 📦 **Planes todo incluido** — paquetes con hospedaje, actividades y servicios a precio fijo
+- 💰 **Pagos** — registro de abonos con múltiples métodos de pago
+- 📊 **Utilidad por actividad** — ingresos vs gastos por evento para saber cuánto se gana
 
-## Project setup
+---
 
-```bash
-$ npm install
+## 🧱 Stack Tecnológico
+
+### Backend
+| Tecnología | Uso |
+|---|---|
+| [NestJS](https://nestjs.com) | Framework principal |
+| [TypeORM](https://typeorm.io) | ORM para PostgreSQL |
+| [PostgreSQL](https://www.postgresql.org) | Base de datos |
+| [Supabase](https://supabase.com) | Autenticación y JWT |
+| [class-validator](https://github.com/typestack/class-validator) | Validación de DTOs |
+| [Helmet](https://helmetjs.github.io) | Headers de seguridad HTTP |
+| [@nestjs/throttler](https://github.com/nestjs/throttler) | Rate limiting |
+
+### Frontend
+| Tecnología | Uso |
+|---|---|
+| [React](https://react.dev) | UI |
+| [TypeScript](https://www.typescriptlang.org) | Tipado estático |
+| [Tailwind CSS](https://tailwindcss.com) | Estilos |
+| [Vite](https://vitejs.dev) | Build tool |
+
+---
+
+## 📁 Estructura del Proyecto (Backend)
+
+```
+src/
+  auth/                        # Guard de Supabase y decorador @Public()
+  common/
+    filters/                   # HttpExceptionFilter global
+  config/
+    database.config.ts         # Configuración de TypeORM
+  tipo-habitacion/             # Catálogo de tipos de habitación
+  habitacion/                  # Habitaciones físicas del hotel
+  servicios/                   # Extras del hotel (desayuno, spa, etc.)
+  actividades/                 # Actividades, eventos y gastos operativos
+  planes/                      # Paquetes todo incluido
+  requisitos/                  # Vacunas y declaraciones de huéspedes
+  guests/                      # Huéspedes de cada reservación
+  reservations/                # Reservaciones principales
+  reservation-links/           # Links únicos de reserva
+  app.module.ts
+  main.ts
 ```
 
-## Compile and run the project
+---
+
+## 🚀 Instalación y configuración
+
+### Requisitos previos
+- Node.js >= 18
+- PostgreSQL >= 14
+- Cuenta en [Supabase](https://supabase.com)
+
+### 1. Clonar el repositorio
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+git clone https://github.com/netvuk/rooma-backend.git
+cd rooma-backend
 ```
 
-## Run tests
+### 2. Instalar dependencias
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm install
 ```
 
-## Deployment
+### 3. Configurar variables de entorno
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Copia el archivo de ejemplo y completa los valores:
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+cp .env.example .env
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+```env
+# Base de datos
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=tu_contrasena
+DB_NAME=rooma
 
-## Resources
+# Supabase
+SUPABASE_URL=https://tuproyecto.supabase.co
+SUPABASE_ANON_KEY=tu_anon_key
 
-Check out a few resources that may come in handy when working with NestJS:
+# App
+PORT=3000
+FRONTEND_URL=http://localhost:5173
+NODE_ENV=development
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### 4. Levantar el servidor
 
-## Support
+```bash
+# Desarrollo
+npm run start:dev
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+# Producción
+npm run build
+npm run start:prod
+```
 
-## Stay in touch
+El servidor corre en `http://localhost:3000/api`
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+---
 
-## License
+## 📡 Endpoints principales
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+### Tipo de habitación
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/api/tipo-habitacion` | Crear tipo |
+| `GET` | `/api/tipo-habitacion` | Listar tipos |
+| `GET` | `/api/tipo-habitacion/:id` | Ver tipo |
+| `PATCH` | `/api/tipo-habitacion/:id` | Actualizar |
+| `DELETE` | `/api/tipo-habitacion/:id` | Eliminar |
+
+### Habitaciones
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/api/habitacion` | Crear habitación |
+| `GET` | `/api/habitacion` | Listar habitaciones |
+| `GET` | `/api/habitacion/disponibles` | Solo disponibles |
+| `GET` | `/api/habitacion/:id` | Ver habitación |
+| `PATCH` | `/api/habitacion/:id` | Actualizar |
+| `DELETE` | `/api/habitacion/:id` | Eliminar |
+
+### Actividades
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/api/actividades` | Crear actividad |
+| `GET` | `/api/actividades` | Listar actividades |
+| `GET` | `/api/actividades/activas` | Solo activas |
+| `POST` | `/api/actividades/eventos` | Crear evento |
+| `GET` | `/api/actividades/:id/eventos` | Eventos de una actividad |
+| `GET` | `/api/actividades/eventos/:id` | Ver evento |
+| `PATCH` | `/api/actividades/eventos/:id` | Actualizar evento |
+| `DELETE` | `/api/actividades/eventos/:id` | Eliminar evento |
+| `GET` | `/api/actividades/eventos/:id/utilidad` | Utilidad del evento |
+
+### Planes
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/api/planes` | Crear plan |
+| `GET` | `/api/planes` | Listar planes |
+| `GET` | `/api/planes/activos` | Solo activos |
+| `GET` | `/api/planes/:id` | Ver plan |
+| `PATCH` | `/api/planes/:id` | Actualizar |
+| `DELETE` | `/api/planes/:id` | Eliminar |
+
+### Reservaciones
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/api/reservations/:code` | Crear reservación con link |
+| `GET` | `/api/reservations` | Listar reservaciones |
+| `GET` | `/api/reservations/:id` | Ver reservación |
+| `PATCH` | `/api/reservations/:id` | Actualizar |
+| `DELETE` | `/api/reservations/:id` | Eliminar |
+
+### Links de reserva
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/api/reservation-links` | Crear link (admin) |
+| `GET` | `/api/reservation-links` | Listar links (admin) |
+| `GET` | `/api/reservation-links/validate/:code` | Validar link (público) |
+
+---
+
+## 🔐 Seguridad
+
+- Todas las rutas están protegidas por el **SupabaseGuard** por defecto
+- Las rutas públicas se marcan con `@Public()` (formulario de reserva, validación de links)
+- **Helmet** para headers de seguridad HTTP
+- **Rate limiting** — máximo 30 requests por minuto por IP
+- **ValidationPipe** global con `whitelist: true` y `forbidNonWhitelisted: true`
+- **Response DTOs** — nunca se exponen entidades directamente al cliente
+- Variables sensibles siempre en `.env`, nunca en el código
+
+---
+
+## 🏗️ Arquitectura
+
+Rooma sigue una **arquitectura modular por dominio** en NestJS. Cada funcionalidad del negocio vive en su propio módulo con entidad, DTOs, service y controller. Los módulos se comunican exportando e importando servicios.
+
+El precio de las reservaciones **siempre se calcula en el backend** consultando la base de datos — nunca se acepta un precio enviado desde el cliente.
+
+---
+
+## 📦 Paquetes disponibles
+
+| Paquete | Módulos incluidos |
+|---|---|
+| **Básico** | Reservaciones, huéspedes, links de reserva |
+| **Estándar** | Básico + habitaciones, tipos, servicios |
+| **Completo** | Estándar + actividades, eventos, planes |
+| **Premium** | Completo + dashboard, reportes exportables |
+
+Cada cliente tiene su propio deploy y base de datos independiente.
+
+---
+
+## 👨‍💻 Desarrollado por
+
+**NetVuk Interactive**  
+Desarrollo de software a medida para negocios turísticos y hoteleros en Colombia.
+
+---
+
+## 📄 Licencia
+
+Propietario — todos los derechos reservados © NetVuk Interactive
