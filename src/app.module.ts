@@ -8,6 +8,9 @@ import { GuestsModule } from './guests/guests.module';
 import { AuthModule } from './auth/auth.module';
 import { TipoHabitacionModule } from './tipo-habitacion/tipo-habitacion.module';
 import { HabitacionModule } from './habitacion/habitacion.module';
+import { ServiciosModule } from './servicios/servicios.module';
+import { ActividadesModule } from './actividades/actividades.module';
+import { PlanesModule } from './planes/planes.module';
 
 @Module({
   imports: [
@@ -23,6 +26,9 @@ import { HabitacionModule } from './habitacion/habitacion.module';
     GuestsModule,
     TipoHabitacionModule,
     HabitacionModule,
+    ServiciosModule,
+    ActividadesModule,
+    PlanesModule,
   ],
 })
 export class AppModule {}
