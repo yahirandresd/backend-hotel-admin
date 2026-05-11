@@ -1,9 +1,6 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  JoinColumn,
+  Entity, PrimaryGeneratedColumn, Column,
+  ManyToOne, JoinColumn,
 } from 'typeorm';
 import { Reservation } from '../../reservations/entities/reservation.entity';
 

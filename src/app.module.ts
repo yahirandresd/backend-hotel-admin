@@ -11,6 +11,12 @@ import { HabitacionModule } from './habitacion/habitacion.module';
 import { ServiciosModule } from './servicios/servicios.module';
 import { ActividadesModule } from './actividades/actividades.module';
 import { PlanesModule } from './planes/planes.module';
+import { RequisitosModule } from './requisitos/requisitos.module';
+import { ReportesModule } from './reportes/reportes.module';
+import { ReportesModule } from './reportes/reportes.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { PagosModule } from './pagos/pagos.module';
+import { RequisitosModule } from './requisitos/requisitos.module';
 
 @Module({
   imports: [
@@ -29,6 +35,10 @@ import { PlanesModule } from './planes/planes.module';
     ServiciosModule,
     ActividadesModule,
     PlanesModule,
+    RequisitosModule,
+    PagosModule,
+    DashboardModule,
+    ReportesModule,
   ],
 })
 export class AppModule {}

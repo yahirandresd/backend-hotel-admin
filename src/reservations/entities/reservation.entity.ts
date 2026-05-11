@@ -1,23 +1,20 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  OneToMany,
+  Entity, PrimaryGeneratedColumn, Column,
+  CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn,
 } from 'typeorm';
 import { Guest } from '../../guests/entities/guest.entity';
+import { Plan } from '../../planes/entities/plan.entity';
 
 @Entity('reservations')
 export class Reservation {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  // Solo referencia al titular
+  // ── Referencia al titular ─────────────────────────────────────────────────
   @Column({ length: 20 })
   titularDocNum!: string;
 
-  // Estadía
+  // ── Estadía ───────────────────────────────────────────────────────────────
   @Column({ type: 'date' })
   fechaIngreso!: string;
 
@@ -27,16 +24,42 @@ export class Reservation {
   @Column({ length: 100 })
   motivo!: string;
 
+  // ── Estado ────────────────────────────────────────────────────────────────
+  @Column({ length: 20, default: 'pendiente' })
+  estado!: string;
+
+  // ── Plan (opcional) ───────────────────────────────────────────────────────
+  @ManyToOne(() => Plan, { nullable: true, eager: false })
+  @JoinColumn({ name: 'planId' })
+  plan?: Plan;
+
+  @Column({ nullable: true })
+  planId?: number;
+
+  // ── Precio total ──────────────────────────────────────────────────────────
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  precioTotal!: number;
+
+  // ── Canal de origen ───────────────────────────────────────────────────────
+  @Column({ length: 20, default: 'web' })
+  canalOrigen!: string;
+
+  // ── Notas internas ────────────────────────────────────────────────────────
+  @Column({ type: 'text', nullable: true })
+  notas?: string;
+
+  // ── Declaración ───────────────────────────────────────────────────────────
   @Column({ default: false })
   aceptaTerminos!: boolean;
 
-  // Todos los huéspedes (incluido titular)
+  // ── Relación con huéspedes ────────────────────────────────────────────────
   @OneToMany(() => Guest, (guest) => guest.reservation, {
     cascade: true,
     eager: true,
   })
   guests!: Guest[];
 
+  // ── Auditoría ─────────────────────────────────────────────────────────────
   @CreateDateColumn()
   createdAt!: Date;
 

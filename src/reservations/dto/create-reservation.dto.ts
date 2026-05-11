@@ -99,4 +99,14 @@ export class CreateReservationDto {
   @ValidateNested({ each: true })
   @Type(() => CreateGuestDto)
   guests?: CreateGuestDto[];
+
+  // Admin
+  @IsOptional()
+  @IsString()
+  @IsIn(['directo', 'web', 'telefono', 'ota', 'walk_in'])
+  canalOrigen?: string;
+
+  @IsOptional()
+  @IsString()
+  notas?: string;
 }
