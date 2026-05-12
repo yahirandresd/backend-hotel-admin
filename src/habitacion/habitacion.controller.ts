@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete,
-  Body, Param, ParseIntPipe, HttpCode, HttpStatus,
+  Body, Param, Query, ParseIntPipe, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { HabitacionService } from './habitacion.service';
 import { CreateHabitacionDto } from './dto/create-habitacion.dto';
@@ -29,10 +29,20 @@ export class HabitacionController {
   }
 
   // GET /api/habitacion/disponibles
+  // GET /api/habitacion/disponibles?desde=YYYY-MM-DD&hasta=YYYY-MM-DD
   @Get('disponibles')
-  async findDisponibles(): Promise<HabitacionResponseDto[]> {
-    const habitaciones = await this.habitacionService.findDisponibles();
+  async findDisponibles(
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
+  ): Promise<HabitacionResponseDto[]> {
+    const habitaciones = await this.habitacionService.findDisponibles(desde, hasta);
     return habitaciones.map(toHabitacionResponse);
+  }
+
+  // GET /api/habitacion/ocupacion?fecha=YYYY-MM-DD
+  @Get('ocupacion')
+  findOcupacion(@Query('fecha') fecha: string) {
+    return this.habitacionService.findOcupacion(fecha);
   }
 
   // GET /api/habitacion/:id
