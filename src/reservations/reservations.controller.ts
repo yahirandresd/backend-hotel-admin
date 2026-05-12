@@ -23,8 +23,9 @@ import {
   UpdateReservationAdminDto,
 } from './dto/admin-reservation.dto';
 import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-@Public()
+@Roles('admin', 'staff')
 @Controller('reservations')
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
@@ -32,6 +33,7 @@ export class ReservationsController {
   // ── Cliente ───────────────────────────────────────────────────────────────
 
   // POST /api/reservations/:code
+  @Public()
   @Post(':code')
   @HttpCode(HttpStatus.CREATED)
   async create(

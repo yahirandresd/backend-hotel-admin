@@ -10,9 +10,9 @@ import { UpdateActividadEventoDto } from './dto/update-actividad-evento.dto';
 import {
   toActividadResponse, toEventoResponse,
 } from './dto/actividad-response.dto';
-import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-@Public()
+@Roles('admin', 'staff')
 @Controller('actividades')
 export class ActividadesController {
   constructor(private readonly actividadesService: ActividadesService) {}

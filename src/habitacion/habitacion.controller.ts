@@ -6,9 +6,9 @@ import { HabitacionService } from './habitacion.service';
 import { CreateHabitacionDto } from './dto/create-habitacion.dto';
 import { UpdateHabitacionDto } from './dto/update-habitacion.dto';
 import { HabitacionResponseDto, toHabitacionResponse } from './dto/habitacion-response.dto';
-import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-@Public()
+@Roles('admin', 'staff')
 @Controller('habitacion')
 export class HabitacionController {
   constructor(private readonly habitacionService: HabitacionService) {}

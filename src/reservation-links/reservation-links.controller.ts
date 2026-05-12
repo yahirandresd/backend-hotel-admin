@@ -5,9 +5,11 @@ import {
 import { ReservationLinksService } from './reservation-links.service';
 import { LinkResponseDto, toLinkResponse } from './dto/link-response.dto';
 import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 const BASE_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
 
+@Roles('admin')
 @Controller('reservation-links')
 export class ReservationLinksController {
   constructor(private readonly linksService: ReservationLinksService) {}

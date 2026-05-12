@@ -10,9 +10,9 @@ import {
   toRequisitoResponse,
   toHuespedRequisitoResponse,
 } from './dto/requisito-response.dto';
-import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-@Public()
+@Roles('admin', 'staff')
 @Controller('requisitos')
 export class RequisitosController {
   constructor(private readonly requisitosService: RequisitosService) {}

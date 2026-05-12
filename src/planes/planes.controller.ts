@@ -6,9 +6,9 @@ import { PlanesService } from './planes.service';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { PlanResponseDto, toPlanResponse } from './dto/plan-response.dto';
-import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-@Public()
+@Roles('admin')
 @Controller('planes')
 export class PlanesController {
   constructor(private readonly planesService: PlanesService) {}

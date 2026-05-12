@@ -6,9 +6,9 @@ import { TipoHabitacionService } from './tipo-habitacion.service';
 import { CreateTipoHabitacionDto } from './dto/create-tipo-habitacion.dto';
 import { UpdateTipoHabitacionDto } from './dto/update-tipo-habitacion.dto';
 import { TipoHabitacionResponseDto, toTipoHabitacionResponse } from './dto/tipo-habitacion-response.dto';
-import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-@Public()
+@Roles('admin')
 @Controller('tipo-habitacion')
 export class TipoHabitacionController {
   constructor(private readonly tipoHabitacionService: TipoHabitacionService) {}

@@ -6,9 +6,9 @@ import { PagosService } from './pagos.service';
 import { CreatePagoDto } from './dto/create-pago.dto';
 import { UpdatePagoDto } from './dto/update-pago.dto';
 import { PagoResponseDto, toPagoResponse } from './dto/pago-response.dto';
-import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-@Public()
+@Roles('admin', 'staff')
 @Controller('pagos')
 export class PagosController {
   constructor(private readonly pagosService: PagosService) {}

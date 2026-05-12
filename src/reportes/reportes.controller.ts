@@ -1,17 +1,7 @@
-import {
-  Controller,
-  Get,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-
+import { Controller, Get, Query } from '@nestjs/common';
 import { ReportesService } from './reportes.service';
-
-import { SupabaseGuard } from '../auth/guards/supabase.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 
-@UseGuards(SupabaseGuard, RolesGuard)
 @Roles('admin')
 @Controller('reportes')
 export class ReportesController {
