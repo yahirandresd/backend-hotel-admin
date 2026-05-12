@@ -10,11 +10,11 @@ export class AuthController {
 
   @Post('staff')
   createStaff(@Body() body: CreateUserDto) {
-    return this.authService.createStaff(body.email, body.password);
+    return this.authService.createStaff(body.email, body.password, body.nombre, body.apellido);
   }
 
   @Post('admin')
   createAdmin(@Body() body: CreateUserDto) {
-    return this.authService.createAdmin(body.email, body.password);
+    return this.authService.createAdmin(body.email, body.password, body.nombre, body.apellido);
   }
 }

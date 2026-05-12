@@ -105,6 +105,16 @@ export class ReservationsController {
     return this.reservationsService.findAsignaciones(id);
   }
 
+  // DELETE /api/reservations/:id/habitaciones/:guestId
+  @Delete(':id/habitaciones/:guestId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async desasignarHabitacion(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('guestId', ParseIntPipe) guestId: number,
+  ): Promise<void> {
+    return this.reservationsService.desasignarHabitacion(id, guestId);
+  }
+
   // POST /api/reservations/:id/servicios
   @Post(':id/servicios')
   @HttpCode(HttpStatus.OK)

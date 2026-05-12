@@ -8,29 +8,19 @@ export class AuthService {
     process.env.SUPABASE_SECRET_KEY!,
   );
 
-  async createStaff(
-    email: string,
-    password: string,
-  ) {
+  async createStaff(email: string, password: string, nombre: string, apellido: string) {
     return this.supabase.auth.admin.createUser({
       email,
       password,
-      user_metadata: {
-        role: 'staff',
-      },
+      user_metadata: { role: 'staff', nombre, apellido },
     });
   }
 
-  async createAdmin(
-    email: string,
-    password: string,
-  ) {
+  async createAdmin(email: string, password: string, nombre: string, apellido: string) {
     return this.supabase.auth.admin.createUser({
       email,
       password,
-      user_metadata: {
-        role: 'admin',
-      },
+      user_metadata: { role: 'admin', nombre, apellido },
     });
   }
 }

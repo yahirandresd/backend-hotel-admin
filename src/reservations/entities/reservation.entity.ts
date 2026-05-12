@@ -4,6 +4,7 @@ import {
 } from 'typeorm';
 import { Guest } from '../../guests/entities/guest.entity';
 import { Plan } from '../../planes/entities/plan.entity';
+import { Pago } from '../../pagos/entities/pago.entity';
 
 @Entity('reservations')
 export class Reservation {
@@ -58,6 +59,10 @@ export class Reservation {
     eager: true,
   })
   guests!: Guest[];
+
+  // ── Pagos ─────────────────────────────────────────────────────────────────
+  @OneToMany(() => Pago, (pago) => pago.reservacion)
+  pagos!: Pago[];
 
   // ── Auditoría ─────────────────────────────────────────────────────────────
   @CreateDateColumn()

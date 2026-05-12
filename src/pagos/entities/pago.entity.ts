@@ -2,6 +2,7 @@ import {
   Entity, PrimaryGeneratedColumn, Column,
   CreateDateColumn, ManyToOne, JoinColumn,
 } from 'typeorm';
+import { Reservation } from '../../reservations/entities/reservation.entity';
 
 @Entity('pago')
 export class Pago {
@@ -25,6 +26,10 @@ export class Pago {
 
   @Column()
   reservacionId!: number;
+
+  @ManyToOne(() => Reservation, (reservation) => reservation.pagos, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'reservacionId' })
+  reservacion!: Reservation;
 
   @CreateDateColumn()
   fechaPago!: Date;

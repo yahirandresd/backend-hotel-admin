@@ -70,6 +70,7 @@ export class GuestsService {
 
   async findAll(): Promise<Guest[]> {
     return this.guestRepository.find({
+      relations: ['reservation'],
       order: { reservationId: 'ASC', esTitular: 'DESC' },
     });
   }
@@ -77,12 +78,16 @@ export class GuestsService {
   async findByReservation(reservationId: number): Promise<Guest[]> {
     return this.guestRepository.find({
       where: { reservationId },
+      relations: ['reservation'],
       order: { esTitular: 'DESC' },
     });
   }
 
   async findOne(id: number): Promise<Guest> {
-    const guest = await this.guestRepository.findOne({ where: { id } });
+    const guest = await this.guestRepository.findOne({
+      where: { id },
+      relations: ['reservation'],
+    });
     if (!guest) throw new NotFoundException(`Huésped #${id} no encontrado`);
     return guest;
   }

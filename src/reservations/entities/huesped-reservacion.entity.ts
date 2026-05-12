@@ -30,6 +30,9 @@ export class HuespedReservacion {
   @Column({ nullable: true })
   habitacionId?: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  precioNoche?: number;
+
   @Column({ default: false })
   esTitular!: boolean;
 

@@ -100,7 +100,7 @@ export class ReservationsService {
   async findOne(id: number): Promise<Reservation> {
     const reservation = await this.reservationRepository.findOne({
       where: { id },
-      relations: { guests: true },
+      relations: { guests: true, pagos: true },
       order: { guests: { esTitular: 'DESC' } },
     });
 
@@ -176,6 +176,7 @@ export class ReservationsService {
 
     const habitacion = await this.habitacionRepo.findOne({
       where: { id: dto.habitacionId },
+      relations: { tipo: true },
     });
     if (!habitacion) {
       throw new NotFoundException(
@@ -193,8 +194,9 @@ export class ReservationsService {
       where: { reservacionId: id, guestId: dto.guestId },
     });
 
+    const precioNoche = Number(habitacion.tipo.precioBase);
+
     if (existente) {
-      // Liberar habitación anterior si era diferente
       if (
         existente.habitacionId &&
         existente.habitacionId !== dto.habitacionId
@@ -204,6 +206,7 @@ export class ReservationsService {
         });
       }
       existente.habitacionId = dto.habitacionId;
+      existente.precioNoche = precioNoche;
       await this.huespedReservacionRepo.save(existente);
     } else {
       const asignacion = this.huespedReservacionRepo.create({
@@ -211,6 +214,7 @@ export class ReservationsService {
         reservacionId: id,
         habitacionId: dto.habitacionId,
         esTitular: guest.esTitular,
+        precioNoche,
       });
       await this.huespedReservacionRepo.save(asignacion);
     }
@@ -231,14 +235,52 @@ export class ReservationsService {
     return asignacion;
   }
 
+  // ── Desasignar habitación de un huésped ───────────────────────────────────
+
+  async desasignarHabitacion(reservacionId: number, guestId: number): Promise<void> {
+    const asignacion = await this.huespedReservacionRepo.findOne({
+      where: { reservacionId, guestId },
+    });
+
+    if (!asignacion) {
+      throw new NotFoundException(
+        `No hay habitación asignada al huésped #${guestId} en esta reserva`,
+      );
+    }
+
+    if (asignacion.habitacionId) {
+      await this.habitacionRepo.update(asignacion.habitacionId, { estado: 'disponible' });
+    }
+
+    await this.huespedReservacionRepo.remove(asignacion);
+  }
+
   // ── Ver asignaciones de habitaciones ──────────────────────────────────────
 
-  async findAsignaciones(reservacionId: number): Promise<HuespedReservacion[]> {
-    await this.findOne(reservacionId);
-    return this.huespedReservacionRepo.find({
+  async findAsignaciones(reservacionId: number) {
+    const reservation = await this.findOne(reservacionId);
+
+    const asignaciones = await this.huespedReservacionRepo.find({
       where: { reservacionId },
-      relations: { habitacion: true },
+      relations: { habitacion: { tipo: true } },
     });
+
+    const noches = Math.ceil(
+      (new Date(reservation.fechaSalida).getTime() - new Date(reservation.fechaIngreso).getTime())
+      / (1000 * 60 * 60 * 24),
+    );
+
+    return asignaciones.map((a) => ({
+      guestId:     a.guestId,
+      habitacionId: a.habitacionId,
+      numero:      a.habitacion?.numero,
+      piso:        a.habitacion?.piso,
+      tipo:        a.habitacion?.tipo?.nombre,
+      precioNoche: Number(a.precioNoche ?? a.habitacion?.tipo?.precioBase ?? 0),
+      noches,
+      subtotal:    Number(a.precioNoche ?? a.habitacion?.tipo?.precioBase ?? 0) * noches,
+      esTitular:   a.esTitular,
+    }));
   }
 
   // ── Agregar servicio ──────────────────────────────────────────────────────
