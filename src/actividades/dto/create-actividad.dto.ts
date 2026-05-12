@@ -25,12 +25,6 @@ export class CreateActividadDto {
   duracionHoras?: number;
 
   @IsOptional()
-  @IsInt()
-  @IsPositive()
-  @Type(() => Number)
-  cupoMaximo?: number;
-
-  @IsOptional()
   @IsBoolean()
   activo?: boolean;
 }

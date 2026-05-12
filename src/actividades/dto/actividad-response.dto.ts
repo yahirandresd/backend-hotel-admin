@@ -22,13 +22,12 @@ export interface ActividadEventoResponseDto {
 }
 
 export interface ActividadResponseDto {
-  id:            number;
-  nombre:        string;
-  descripcion?:  string;
-  precio:        number;
+  id:             number;
+  nombre:         string;
+  descripcion?:   string;
+  precio:         number;
   duracionHoras?: number;
-  cupoMaximo?:   number;
-  activo:        boolean;
+  activo:         boolean;
 }
 
 export function toGastoResponse(gasto: ActividadEventoGasto): ActividadEventoGastoResponseDto {
@@ -68,7 +67,6 @@ export function toActividadResponse(actividad: Actividad): ActividadResponseDto 
     descripcion:   actividad.descripcion,
     precio:        Number(actividad.precio),
     duracionHoras: actividad.duracionHoras,
-    cupoMaximo:    actividad.cupoMaximo,
     activo:        actividad.activo,
   };
 }

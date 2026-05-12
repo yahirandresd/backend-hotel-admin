@@ -20,9 +20,6 @@ export class Actividad {
   @Column({ nullable: true })
   duracionHoras?: number;
 
-  @Column({ nullable: true })
-  cupoMaximo?: number;
-
   @Column({ default: true })
   activo!: boolean;
 
