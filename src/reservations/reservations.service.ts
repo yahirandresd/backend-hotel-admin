@@ -7,11 +7,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Reservation } from './entities/reservation.entity';
 import { HuespedReservacion } from './entities/huesped-reservacion.entity';
+import { ReservacionServicio } from './entities/reservacion-servicio.entity';
 import { Guest } from '../guests/entities/guest.entity';
 import { Habitacion } from '../habitacion/entities/habitacion.entity';
 import { Servicio } from '../servicios/entities/servicio.entity';
 import { ActividadEvento } from '../actividades/entities/actividad-evento.entity';
+import { ReservacionActividad } from '../actividades/entities/reservacion-actividad.entity';
 import { Plan } from '../planes/entities/plan.entity';
+import { Pago } from '../pagos/entities/pago.entity';
 import { GuestsService } from '../guests/guests.service';
 import { ReservationLinksService } from '../reservation-links/reservation-links.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
@@ -46,6 +49,15 @@ export class ReservationsService {
 
     @InjectRepository(Plan)
     private readonly planRepo: Repository<Plan>,
+
+    @InjectRepository(ReservacionServicio)
+    private readonly reservacionServicioRepo: Repository<ReservacionServicio>,
+
+    @InjectRepository(ReservacionActividad)
+    private readonly reservacionActividadRepo: Repository<ReservacionActividad>,
+
+    @InjectRepository(Pago)
+    private readonly pagoRepo: Repository<Pago>,
 
     private readonly guestsService: GuestsService,
     private readonly linksService: ReservationLinksService,
@@ -362,6 +374,99 @@ export class ReservationsService {
     const reservation = await this.findOne(id);
     Object.assign(reservation, dto);
     return this.reservationRepository.save(reservation);
+  }
+
+  // ── Desglose financiero ───────────────────────────────────────────────────
+
+  async calcularDesglose(id: number) {
+    const reservation = await this.findOne(id);
+
+    const noches = Math.ceil(
+      (new Date(reservation.fechaSalida).getTime() - new Date(reservation.fechaIngreso).getTime())
+      / (1000 * 60 * 60 * 24),
+    );
+
+    // Habitaciones
+    const asignaciones = await this.huespedReservacionRepo.find({
+      where: { reservacionId: id },
+      relations: { habitacion: { tipo: true } },
+    });
+
+    const habitaciones = asignaciones
+      .filter((a) => a.habitacionId)
+      .map((a) => {
+        const precioNoche = Number(a.precioNoche ?? a.habitacion?.tipo?.precioBase ?? 0);
+        return {
+          guestId:      a.guestId,
+          habitacionId: a.habitacionId!,
+          numero:       a.habitacion?.numero ?? '',
+          precioNoche,
+          noches,
+          subtotal:     precioNoche * noches,
+        };
+      });
+
+    // Servicios
+    const serviciosAsignados = await this.reservacionServicioRepo.find({
+      where: { reservacionId: id },
+      relations: { servicio: true },
+    });
+
+    const servicios = serviciosAsignados.map((s) => ({
+      servicioId:     s.servicioId,
+      nombre:         s.servicio?.nombre ?? '',
+      cantidad:       s.cantidad,
+      precioUnitario: Number(s.precioUnitario),
+      subtotal:       Number(s.precioUnitario) * s.cantidad,
+      fecha:          s.fechaServicio,
+    }));
+
+    // Actividades
+    const actividadesAsignadas = await this.reservacionActividadRepo.find({
+      where: { reservacionId: id },
+      relations: { evento: { actividad: true } },
+    });
+
+    const actividades = actividadesAsignadas.map((a) => ({
+      eventoId:         a.eventoId,
+      nombre:           a.evento?.actividad?.nombre ?? '',
+      fecha:            a.evento?.fecha ?? '',
+      cantidadPersonas: a.cantidadPersonas,
+      precioUnitario:   Number(a.precioUnitario),
+      subtotal:         Number(a.precioUnitario) * a.cantidadPersonas,
+    }));
+
+    // Totales por sección
+    const subtotalHabitaciones = habitaciones.reduce((s, h) => s + h.subtotal, 0);
+    const subtotalServicios     = servicios.reduce((s, sv) => s + sv.subtotal, 0);
+    const subtotalActividades   = actividades.reduce((s, a) => s + a.subtotal, 0);
+
+    const conPlan = !!reservation.planId;
+    const total   = conPlan
+      ? Number(reservation.precioTotal)
+      : subtotalHabitaciones + subtotalServicios + subtotalActividades;
+
+    // Pagos
+    const pagos  = await this.pagoRepo.find({ where: { reservacionId: id } });
+    const pagado = pagos
+      .filter((p) => p.estado === 'completado')
+      .reduce((s, p) => s + Number(p.monto), 0);
+
+    return {
+      reservacionId: id,
+      conPlan,
+      planId:        reservation.planId,
+      noches,
+      habitaciones,
+      servicios,
+      actividades,
+      subtotalHabitaciones,
+      subtotalServicios,
+      subtotalActividades,
+      total,
+      pagado,
+      pendiente: total - pagado,
+    };
   }
 
   // ── Helpers privados ──────────────────────────────────────────────────────

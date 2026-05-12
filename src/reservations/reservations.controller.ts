@@ -137,6 +137,12 @@ export class ReservationsController {
     return { message: 'Actividad agregada correctamente' };
   }
 
+  // GET /api/reservations/:id/desglose
+  @Get(':id/desglose')
+  calcularDesglose(@Param('id', ParseIntPipe) id: number) {
+    return this.reservationsService.calcularDesglose(id);
+  }
+
   // PATCH /api/reservations/:id/plan
   @Patch(':id/plan')
   async asignarPlan(
