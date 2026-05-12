@@ -153,18 +153,22 @@ export class ReservationsService {
     reservation.estado = dto.estado;
     if (dto.notas) reservation.notas = dto.notas;
 
-    // Si hace check_out liberar habitaciones
-    if (dto.estado === 'check_out' || dto.estado === 'cancelada') {
-      const asignaciones = await this.huespedReservacionRepo.find({
-        where: { reservacionId: id },
-      });
+    const asignaciones = await this.huespedReservacionRepo.find({
+      where: { reservacionId: id },
+    });
+    const habitacionIds = asignaciones
+      .map((a) => a.habitacionId)
+      .filter((hid): hid is number => !!hid);
 
-      for (const asignacion of asignaciones) {
-        if (asignacion.habitacionId) {
-          await this.habitacionRepo.update(asignacion.habitacionId, {
-            estado: 'disponible',
-          });
-        }
+    if (dto.estado === 'check_in') {
+      for (const hid of habitacionIds) {
+        await this.habitacionRepo.update(hid, { estado: 'ocupada' });
+      }
+    }
+
+    if (dto.estado === 'check_out' || dto.estado === 'cancelada') {
+      for (const hid of habitacionIds) {
+        await this.habitacionRepo.update(hid, { estado: 'disponible' });
       }
     }
 
@@ -230,10 +234,6 @@ export class ReservationsService {
       });
       await this.huespedReservacionRepo.save(asignacion);
     }
-
-    // Marcar habitación como ocupada
-    habitacion.estado = 'ocupada';
-    await this.habitacionRepo.save(habitacion);
 
     const asignacion = await this.huespedReservacionRepo.findOne({
       where: { reservacionId: id, guestId: dto.guestId },
