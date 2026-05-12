@@ -82,15 +82,15 @@ export class ActividadesService {
   async findEventos(actividadId: number): Promise<ActividadEvento[]> {
     await this.findOne(actividadId);
     return this.eventoRepo.find({
-      where: { actividadId },
+      where:     { actividadId },
       relations: { gastos: true },
-      order: { fecha: 'DESC' },
+      order:     { fecha: 'DESC' },
     });
   }
 
   async findEvento(id: number): Promise<ActividadEvento> {
     const evento = await this.eventoRepo.findOne({
-      where: { id },
+      where:     { id },
       relations: { gastos: true },
     });
     if (!evento) throw new NotFoundException(`Evento #${id} no encontrado`);
@@ -104,7 +104,9 @@ export class ActividadesService {
 
     if (gastosDto) {
       await this.gastoRepo.delete({ eventoId: id });
-      evento.gastos = gastosDto.map((g) => this.gastoRepo.create({ ...g, eventoId: id }));
+      evento.gastos = gastosDto.map((g) =>
+        this.gastoRepo.create({ ...g, eventoId: id }),
+      );
     }
 
     return this.eventoRepo.save(evento);
@@ -128,9 +130,10 @@ export class ActividadesService {
       (sum, g) => sum + Number(g.monto), 0,
     );
 
+    // Query directa a la tabla sin usar relación de entidad
     const result = await this.eventoRepo
       .createQueryBuilder('evento')
-      .leftJoin('evento.reservacionActividades', 'ra')
+      .leftJoin('reservacion_actividad', 'ra', 'ra.eventoId = evento.id')
       .select('SUM(ra.precioUnitario * ra.cantidadPersonas)', 'totalIngresos')
       .where('evento.id = :eventoId', { eventoId })
       .getRawOne();

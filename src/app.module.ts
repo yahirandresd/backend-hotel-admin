@@ -13,10 +13,10 @@ import { ActividadesModule } from './actividades/actividades.module';
 import { PlanesModule } from './planes/planes.module';
 import { RequisitosModule } from './requisitos/requisitos.module';
 import { ReportesModule } from './reportes/reportes.module';
-import { ReportesModule } from './reportes/reportes.module';
+
 import { DashboardModule } from './dashboard/dashboard.module';
 import { PagosModule } from './pagos/pagos.module';
-import { RequisitosModule } from './requisitos/requisitos.module';
+
 
 @Module({
   imports: [

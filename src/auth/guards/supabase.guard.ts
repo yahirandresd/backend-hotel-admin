@@ -29,7 +29,7 @@ export class SupabaseGuard implements CanActivate {
 
     // Extraer el token del header Authorization
     const request = context.switchToHttp().getRequest<Request>();
-    const token   = this.extractToken(request);
+    const token = this.extractToken(request);
 
     if (!token) {
       throw new UnauthorizedException('Token no proporcionado');
@@ -43,7 +43,11 @@ export class SupabaseGuard implements CanActivate {
     }
 
     // Adjuntar el usuario al request para usarlo en los controllers
-    (request as any).user = data.user;
+    (request as any).user = {
+      id: data.user.id,
+      email: data.user.email,
+      role: data.user.user_metadata.role,
+    };
 
     return true;
   }

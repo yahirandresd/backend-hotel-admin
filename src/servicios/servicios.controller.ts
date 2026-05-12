@@ -6,9 +6,10 @@ import { ServiciosService } from './servicios.service';
 import { CreateServicioDto } from './dto/create-servicio.dto';
 import { UpdateServicioDto } from './dto/update-servicio.dto';
 import { ServicioResponseDto, toServicioResponse } from './dto/servicio-response.dto';
-import { Public } from '../auth/decorators/public.decorator';
+import { UseGuards } from '@nestjs/common';
+import { SupabaseGuard } from 'src/auth/guards/supabase.guard';
 
-@Public()
+@UseGuards(SupabaseGuard)
 @Controller('servicios')
 export class ServiciosController {
   constructor(private readonly serviciosService: ServiciosService) {}

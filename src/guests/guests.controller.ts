@@ -5,7 +5,10 @@ import {
 import { GuestsService } from './guests.service';
 import { UpdateGuestDto } from './dto/update-guest.dto';
 import { GuestResponseDto, toGuestResponse } from './dto/guest-response.dto';
+import { SupabaseGuard } from '../auth/guards/supabase.guard';
+import { UseGuards } from '@nestjs/common';
 
+@UseGuards(SupabaseGuard)
 @Controller('guests')
 export class GuestsController {
   constructor(private readonly guestsService: GuestsService) {}
