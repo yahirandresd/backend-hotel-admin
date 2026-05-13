@@ -1,5 +1,5 @@
 import {
-  IsString, IsNotEmpty, IsIn, IsOptional, Length,
+  IsString, IsNotEmpty, IsIn, IsOptional, Length, MaxLength,
 } from 'class-validator';
 
 const DOC_TYPES     = ['CC', 'CE', 'PA', 'TI', 'NIT'];
@@ -21,16 +21,16 @@ export class CreateGuestDto {
   @IsString() @IsNotEmpty()
   fechaNac!: string;
 
-  @IsOptional() @IsString() @Length(1, 100)
+  @IsOptional() @IsString() @MaxLength(100)
   ciudadResidencia?: string;
 
-  @IsOptional() @IsString() @Length(1, 100)
+  @IsOptional() @IsString() @MaxLength(100)
   ciudadOrigen?: string;
 
-  @IsOptional() @IsString() @Length(1, 20)
+  @IsOptional() @IsString() @MaxLength(20)
   tel1?: string;
 
-  @IsOptional() @IsString() @Length(1, 20)
+  @IsOptional() @IsString() @MaxLength(20)
   tel2?: string;
 
   @IsString() @IsNotEmpty() @IsIn(VACUNA_VALUES)
