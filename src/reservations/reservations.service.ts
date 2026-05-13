@@ -112,7 +112,7 @@ export class ReservationsService {
   async findOne(id: number): Promise<Reservation> {
     const reservation = await this.reservationRepository.findOne({
       where: { id },
-      relations: { guests: true, pagos: true },
+      relations: { guests: true, pagos: true, plan: true },
       order: { guests: { esTitular: 'DESC' } },
     });
 
