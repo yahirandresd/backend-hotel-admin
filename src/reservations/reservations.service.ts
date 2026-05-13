@@ -466,7 +466,7 @@ export class ReservationsService {
     // Pagos
     const pagos  = await this.pagoRepo.find({ where: { reservacionId: id } });
     const pagado = pagos
-      .filter((p) => p.estado === 'completado')
+      .filter((p) => p.estado !== 'fallido' && p.estado !== 'reembolsado')
       .reduce((s, p) => s + Number(p.monto), 0);
 
     return {

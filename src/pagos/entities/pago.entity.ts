@@ -15,7 +15,7 @@ export class Pago {
   @Column({ length: 30 })
   metodo!: string;
 
-  @Column({ length: 20, default: 'pendiente' })
+  @Column({ length: 20, default: 'completado' })
   estado!: string;
 
   @Column({ length: 100, nullable: true })
