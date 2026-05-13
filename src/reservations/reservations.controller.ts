@@ -30,6 +30,16 @@ import { Roles } from '../auth/decorators/roles.decorator';
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
+  // ── Admin ─────────────────────────────────────────────────────────────────
+
+  // POST /api/reservations/admin
+  @Post('admin')
+  @HttpCode(HttpStatus.CREATED)
+  async createAdmin(@Body() dto: CreateReservationDto): Promise<ReservationResponseDto> {
+    const reservation = await this.reservationsService.createAdmin(dto);
+    return toReservationResponse(reservation);
+  }
+
   // ── Cliente ───────────────────────────────────────────────────────────────
 
   // POST /api/reservations/:code

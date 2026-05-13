@@ -95,6 +95,34 @@ export class ReservationsService {
     return saved;
   }
 
+  // ── Crear (admin) ────────────────────────────────────────────────────────
+
+  async createAdmin(dto: CreateReservationDto): Promise<Reservation> {
+    this.validateDates(dto.fechaIngreso, dto.fechaSalida);
+
+    if (!dto.aceptaTerminos) {
+      throw new BadRequestException('Debe aceptar los términos y condiciones');
+    }
+
+    const reservation = this.reservationRepository.create({
+      titularDocNum: dto.docNum,
+      fechaIngreso:  dto.fechaIngreso,
+      fechaSalida:   dto.fechaSalida,
+      motivo:        dto.motivo,
+      aceptaTerminos: dto.aceptaTerminos,
+      canalOrigen:   dto.canalOrigen ?? 'directo',
+      notas:         dto.notas,
+      estado:        'pendiente',
+      precioTotal:   0,
+    });
+
+    const titular      = this.guestsService.buildTitular(dto);
+    const acompanantes = this.guestsService.buildAcompanantes(dto.guests ?? []);
+    reservation.guests = [titular, ...acompanantes];
+
+    return this.reservationRepository.save(reservation);
+  }
+
   // ── Listar todos ──────────────────────────────────────────────────────────
 
   async findAll(): Promise<Reservation[]> {
