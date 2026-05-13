@@ -14,6 +14,7 @@ export class HabitacionController {
   constructor(private readonly habitacionService: HabitacionService) {}
 
   // POST /api/habitacion
+  @Roles('admin')
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateHabitacionDto): Promise<HabitacionResponseDto> {
@@ -53,6 +54,7 @@ export class HabitacionController {
   }
 
   // PATCH /api/habitacion/:id
+  @Roles('admin')
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -63,6 +65,7 @@ export class HabitacionController {
   }
 
   // DELETE /api/habitacion/:id
+  @Roles('admin')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {

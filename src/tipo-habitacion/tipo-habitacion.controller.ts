@@ -8,7 +8,7 @@ import { UpdateTipoHabitacionDto } from './dto/update-tipo-habitacion.dto';
 import { TipoHabitacionResponseDto, toTipoHabitacionResponse } from './dto/tipo-habitacion-response.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 
-@Roles('admin')
+@Roles('admin', 'staff')
 @Controller('tipo-habitacion')
 export class TipoHabitacionController {
   constructor(private readonly tipoHabitacionService: TipoHabitacionService) {}
@@ -46,6 +46,7 @@ export class TipoHabitacionController {
   }
 
   // DELETE /api/tipo-habitacion/:id
+  @Roles('admin')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {

@@ -9,7 +9,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 
 const BASE_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
 
-@Roles('admin')
+@Roles('admin', 'staff')
 @Controller('reservation-links')
 export class ReservationLinksController {
   constructor(private readonly linksService: ReservationLinksService) {}

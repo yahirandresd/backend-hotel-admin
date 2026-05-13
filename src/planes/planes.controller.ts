@@ -8,7 +8,7 @@ import { UpdatePlanDto } from './dto/update-plan.dto';
 import { PlanResponseDto, toPlanResponse } from './dto/plan-response.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 
-@Roles('admin')
+@Roles('admin', 'staff')
 @Controller('planes')
 export class PlanesController {
   constructor(private readonly planesService: PlanesService) {}
@@ -53,6 +53,7 @@ export class PlanesController {
   }
 
   // DELETE /api/planes/:id
+  @Roles('admin')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
