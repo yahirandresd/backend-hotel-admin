@@ -23,4 +23,10 @@ export class AuthService {
       user_metadata: { role: 'admin', nombre, apellido },
     });
   }
+
+  async updateMetadata(userId: string, data: { nombre?: string; apellido?: string }) {
+    return this.supabase.auth.admin.updateUserById(userId, {
+      user_metadata: data,
+    });
+  }
 }
