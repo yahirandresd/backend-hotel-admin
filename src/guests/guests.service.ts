@@ -5,6 +5,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Guest } from './entities/guest.entity';
+import { HuespedReservacion } from '../reservations/entities/huesped-reservacion.entity';
+import { Habitacion } from '../habitacion/entities/habitacion.entity';
 import { CreateGuestDto } from './dto/create-guest.dto';
 import { UpdateGuestDto } from './dto/update-guest.dto';
 import { CreateReservationDto } from '../reservations/dto/create-reservation.dto';
@@ -14,6 +16,12 @@ export class GuestsService {
   constructor(
     @InjectRepository(Guest)
     private readonly guestRepository: Repository<Guest>,
+
+    @InjectRepository(HuespedReservacion)
+    private readonly huespedReservacionRepo: Repository<HuespedReservacion>,
+
+    @InjectRepository(Habitacion)
+    private readonly habitacionRepo: Repository<Habitacion>,
   ) {}
 
   // ── Usado internamente por ReservationsService ─────────────────────────────
@@ -100,6 +108,29 @@ export class GuestsService {
 
   async remove(id: number): Promise<void> {
     const guest = await this.findOne(id);
+
+    const asignaciones = await this.huespedReservacionRepo.find({
+      where: { guestId: id },
+    });
+
+    for (const asignacion of asignaciones) {
+      if (asignacion.habitacionId) {
+        const otrasActivas = await this.huespedReservacionRepo
+          .createQueryBuilder('hr')
+          .innerJoin('hr.reservacion', 'r')
+          .where('hr.habitacionId = :hid', { hid: asignacion.habitacionId })
+          .andWhere('hr.guestId != :guestId', { guestId: id })
+          .andWhere("r.estado IN ('pendiente', 'confirmada', 'check_in')")
+          .getCount();
+
+        if (otrasActivas === 0) {
+          await this.habitacionRepo.update(asignacion.habitacionId, { estado: 'disponible' });
+        }
+      }
+
+      await this.huespedReservacionRepo.remove(asignacion);
+    }
+
     await this.guestRepository.remove(guest);
   }
 }
