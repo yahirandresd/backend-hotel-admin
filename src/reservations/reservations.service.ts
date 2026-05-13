@@ -359,8 +359,16 @@ export class ReservationsService {
       throw new NotFoundException(`Plan #${dto.planId} no encontrado`);
     }
 
-    reservation.planId = dto.planId;
-    reservation.precioTotal = Number(plan.precio);
+    const cantPersonas = reservation.guests?.length ?? 1;
+
+    if (plan.maxPersonas && cantPersonas > plan.maxPersonas) {
+      throw new BadRequestException(
+        `Este plan es para máximo ${plan.maxPersonas} persona(s) y la reserva tiene ${cantPersonas}`,
+      );
+    }
+
+    reservation.planId     = dto.planId;
+    reservation.precioTotal = Number(plan.precioPersona) * cantPersonas;
 
     return this.reservationRepository.save(reservation);
   }

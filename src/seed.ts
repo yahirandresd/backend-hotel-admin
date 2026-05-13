@@ -39,7 +39,7 @@ const ds = new DataSource({
     Guest, Reservation, HuespedReservacion, ReservacionServicio, Pago,
     ReservationLink,
   ],
-  synchronize: false,
+  synchronize: true,
 });
 
 async function seed() {
@@ -153,25 +153,28 @@ async function seed() {
   const pSvcRepo  = ds.getRepository(PlanServicio);
 
   const planRomantico = await planRepo.save({
-    nombre:      'Plan Romántico',
-    descripcion: 'Ideal para parejas: 2 noches en Suite Junior, desayuno y cena romántica incluidos',
-    precio:      850000,
-    noches:      2,
-    activo:      true,
+    nombre:        'Plan Romántico',
+    descripcion:   'Ideal para parejas: 2 noches en Suite Junior, desayuno y cena romántica incluidos',
+    precioPersona: 425000,
+    maxPersonas:   2,
+    noches:        2,
+    activo:        true,
   });
   const planAventura = await planRepo.save({
-    nombre:      'Plan Aventura',
-    descripcion: '3 noches con desayuno, kayak y senderismo incluidos para toda la familia',
-    precio:      1400000,
-    noches:      3,
-    activo:      true,
+    nombre:        'Plan Aventura',
+    descripcion:   '3 noches con desayuno, kayak y senderismo incluidos para toda la familia',
+    precioPersona: 467000,
+    maxPersonas:   6,
+    noches:        3,
+    activo:        true,
   });
   const planCompleto = await planRepo.save({
-    nombre:      'Plan Todo Incluido',
-    descripcion: '4 noches con todas las comidas, spa, tour y pesca incluidos',
-    precio:      2200000,
-    noches:      4,
-    activo:      true,
+    nombre:        'Plan Todo Incluido',
+    descripcion:   '4 noches con todas las comidas, spa, tour y pesca incluidos',
+    precioPersona: 550000,
+    maxPersonas:   8,
+    noches:        4,
+    activo:        true,
   });
 
   await pSvcRepo.save([
@@ -302,7 +305,7 @@ async function seed() {
     estado:        'confirmada',
     canalOrigen:   'ota',
     planId:        planAventura.id,
-    precioTotal:   1400000,
+    precioTotal:   934000,
     aceptaTerminos: true,
   });
   const g5a = await guestRepo.save(

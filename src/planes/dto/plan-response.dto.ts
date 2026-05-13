@@ -17,24 +17,26 @@ export interface PlanServicioResponseDto {
 }
 
 export interface PlanResponseDto {
-  id:           number;
-  nombre:       string;
-  descripcion?: string;
-  precio:       number;
-  noches:       number;
-  activo:       boolean;
-  actividades:  PlanActividadResponseDto[];
-  servicios:    PlanServicioResponseDto[];
-  createdAt:    Date;
+  id:            number;
+  nombre:        string;
+  descripcion?:  string;
+  precioPersona: number;
+  maxPersonas?:  number;
+  noches:        number;
+  activo:        boolean;
+  actividades:   PlanActividadResponseDto[];
+  servicios:     PlanServicioResponseDto[];
+  createdAt:     Date;
 }
 
 export function toPlanResponse(plan: Plan): PlanResponseDto {
   return {
-    id:          plan.id,
-    nombre:      plan.nombre,
-    descripcion: plan.descripcion,
-    precio:      Number(plan.precio),
-    noches:      plan.noches,
+    id:            plan.id,
+    nombre:        plan.nombre,
+    descripcion:   plan.descripcion,
+    precioPersona: Number(plan.precioPersona),
+    maxPersonas:   plan.maxPersonas,
+    noches:        plan.noches,
     activo:      plan.activo,
     createdAt:   plan.createdAt,
     actividades: plan.actividades?.map((pa) => ({

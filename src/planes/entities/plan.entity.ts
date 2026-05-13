@@ -17,10 +17,13 @@ export class Plan {
   descripcion?: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  precio!: number;
+  precioPersona!: number;
 
   @Column()
   noches!: number;
+
+  @Column({ nullable: true })
+  maxPersonas?: number;
 
   @Column({ default: true })
   activo!: boolean;

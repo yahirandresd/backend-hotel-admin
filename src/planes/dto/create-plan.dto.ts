@@ -40,14 +40,20 @@ export class CreatePlanDto {
   @IsString()
   descripcion?: string;
 
-  @IsPositive({ message: 'El precio debe ser mayor a 0' })
+  @IsPositive({ message: 'El precio por persona debe ser mayor a 0' })
   @Type(() => Number)
-  precio!: number;
+  precioPersona!: number;
 
   @IsInt()
   @IsPositive({ message: 'Las noches deben ser mayor a 0' })
   @Type(() => Number)
   noches!: number;
+
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  @Type(() => Number)
+  maxPersonas?: number;
 
   @IsOptional()
   @IsBoolean()
