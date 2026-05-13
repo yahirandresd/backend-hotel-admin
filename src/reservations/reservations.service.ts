@@ -404,10 +404,11 @@ export class ReservationsService {
   // ── Quitar plan ───────────────────────────────────────────────────────────
 
   async quitarPlan(id: number): Promise<Reservation> {
-    const reservation = await this.findOne(id);
-    reservation.planId      = undefined;
-    reservation.precioTotal = 0;
-    return this.reservationRepository.save(reservation);
+    await this.reservationRepository.update(id, {
+      planId:      null as any,
+      precioTotal: 0,
+    });
+    return this.findOne(id);
   }
 
   // ── Actualizar datos generales (admin) ────────────────────────────────────
