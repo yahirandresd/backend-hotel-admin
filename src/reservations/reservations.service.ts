@@ -373,6 +373,15 @@ export class ReservationsService {
     return this.reservationRepository.save(reservation);
   }
 
+  // ── Quitar plan ───────────────────────────────────────────────────────────
+
+  async quitarPlan(id: number): Promise<Reservation> {
+    const reservation = await this.findOne(id);
+    reservation.planId      = undefined;
+    reservation.precioTotal = 0;
+    return this.reservationRepository.save(reservation);
+  }
+
   // ── Actualizar datos generales (admin) ────────────────────────────────────
 
   async updateAdmin(

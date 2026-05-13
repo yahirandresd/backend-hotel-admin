@@ -153,6 +153,16 @@ export class ReservationsController {
     return toReservationResponse(reservation);
   }
 
+  // DELETE /api/reservations/:id/plan
+  @Delete(':id/plan')
+  @HttpCode(HttpStatus.OK)
+  async quitarPlan(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ReservationResponseDto> {
+    const reservation = await this.reservationsService.quitarPlan(id);
+    return toReservationResponse(reservation);
+  }
+
   // PATCH /api/reservations/:id/admin
   @Patch(':id/admin')
   async updateAdmin(
