@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import databaseConfig from './config/database.config';
 import { ReservationsModule } from './reservations/reservations.module';
 import { GuestsModule } from './guests/guests.module';
@@ -13,14 +15,24 @@ import { ActividadesModule } from './actividades/actividades.module';
 import { PlanesModule } from './planes/planes.module';
 import { RequisitosModule } from './requisitos/requisitos.module';
 import { ReportesModule } from './reportes/reportes.module';
-
 import { DashboardModule } from './dashboard/dashboard.module';
 import { PagosModule } from './pagos/pagos.module';
-
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [databaseConfig] }),
+    ThrottlerModule.forRoot([
+      {
+        name:  'global',
+        ttl:   60000,
+        limit: 60,
+      },
+      {
+        name:  'public',
+        ttl:   60000,
+        limit: 10,
+      },
+    ]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -39,6 +51,9 @@ import { PagosModule } from './pagos/pagos.module';
     PagosModule,
     DashboardModule,
     ReportesModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}
