@@ -1,6 +1,6 @@
 import { Body, Controller, Post, Patch, Param, Req } from '@nestjs/common';
 import { IsOptional, IsString } from 'class-validator';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import { Roles } from './decorators/roles.decorator';
 
