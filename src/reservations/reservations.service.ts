@@ -4,22 +4,18 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Reservation } from './entities/reservation.entity';
 import { HuespedReservacion } from './entities/huesped-reservacion.entity';
-import { ReservacionServicio } from './entities/reservacion-servicio.entity';
-import { Guest } from '../guests/entities/guest.entity';
-import { Habitacion } from '../habitacion/entities/habitacion.entity';
-import { Servicio } from '../servicios/entities/servicio.entity';
-import { ActividadEvento } from '../actividades/entities/actividad-evento.entity';
-import { ReservacionActividad } from '../actividades/entities/reservacion-actividad.entity';
 import { Plan } from '../planes/entities/plan.entity';
-import { Pago } from '../pagos/entities/pago.entity';
+import { ReservationLink } from '../reservation-links/entities/reservation-link.entity';
 import { GuestsService } from '../guests/guests.service';
 import { ReservationLinksService } from '../reservation-links/reservation-links.service';
+import { ReservationRoomsService } from './reservation-rooms.service';
+import { ReservationItemsService } from './reservation-items.service';
+import { ReservationPricingService } from './reservation-pricing.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
-import { toReservationResponse } from './dto/reservation-response.dto';
 import {
   UpdateEstadoDto,
   AsignarHabitacionDto,
@@ -28,6 +24,7 @@ import {
   AsignarPlanDto,
   UpdateReservationAdminDto,
 } from './dto/admin-reservation.dto';
+import { ESTADOS_QUE_LIBERAN_HABITACION } from './constants/reservation-estado.const';
 
 @Injectable()
 export class ReservationsService {
@@ -38,29 +35,15 @@ export class ReservationsService {
     @InjectRepository(HuespedReservacion)
     private readonly huespedReservacionRepo: Repository<HuespedReservacion>,
 
-    @InjectRepository(Habitacion)
-    private readonly habitacionRepo: Repository<Habitacion>,
-
-    @InjectRepository(Servicio)
-    private readonly servicioRepo: Repository<Servicio>,
-
-    @InjectRepository(ActividadEvento)
-    private readonly eventoRepo: Repository<ActividadEvento>,
-
     @InjectRepository(Plan)
     private readonly planRepo: Repository<Plan>,
 
-    @InjectRepository(ReservacionServicio)
-    private readonly reservacionServicioRepo: Repository<ReservacionServicio>,
-
-    @InjectRepository(ReservacionActividad)
-    private readonly reservacionActividadRepo: Repository<ReservacionActividad>,
-
-    @InjectRepository(Pago)
-    private readonly pagoRepo: Repository<Pago>,
-
+    private readonly dataSource: DataSource,
     private readonly guestsService: GuestsService,
     private readonly linksService: ReservationLinksService,
+    private readonly roomsService: ReservationRoomsService,
+    private readonly itemsService: ReservationItemsService,
+    private readonly pricingService: ReservationPricingService,
   ) {}
 
   // ── Crear (cliente) ───────────────────────────────────────────────────────
@@ -73,26 +56,26 @@ export class ReservationsService {
       throw new BadRequestException('Debe aceptar los términos y condiciones');
     }
 
-    const reservation = this.reservationRepository.create({
-      titularDocNum: dto.docNum,
-      fechaIngreso: dto.fechaIngreso,
-      fechaSalida: dto.fechaSalida,
-      motivo: dto.motivo,
-      aceptaTerminos: dto.aceptaTerminos,
-      canalOrigen: dto.canalOrigen ?? 'web',
-      notas: dto.notas,
-      estado: 'pendiente',
-      precioTotal: 0,
-    });
-
-    const titular = this.guestsService.buildTitular(dto);
+    const titular      = this.guestsService.buildTitular(dto);
     const acompanantes = this.guestsService.buildAcompanantes(dto.guests ?? []);
-    reservation.guests = [titular, ...acompanantes];
 
-    const saved = await this.reservationRepository.save(reservation);
-    await this.linksService.markAsUsed(code, saved.id);
-
-    return saved;
+    return this.dataSource.transaction(async (manager) => {
+      const reservation = manager.create(Reservation, {
+        titularDocNum:  dto.docNum,
+        fechaIngreso:   dto.fechaIngreso,
+        fechaSalida:    dto.fechaSalida,
+        motivo:         dto.motivo,
+        aceptaTerminos: dto.aceptaTerminos,
+        canalOrigen:    dto.canalOrigen ?? 'web',
+        notas:          dto.notas,
+        estado:         'pendiente',
+        precioTotal:    0,
+        guests:         [titular, ...acompanantes],
+      });
+      const saved = await manager.save(Reservation, reservation);
+      await manager.update(ReservationLink, { code }, { reservationId: saved.id });
+      return saved;
+    });
   }
 
   // ── Crear (admin) ────────────────────────────────────────────────────────
@@ -104,21 +87,21 @@ export class ReservationsService {
       throw new BadRequestException('Debe aceptar los términos y condiciones');
     }
 
-    const reservation = this.reservationRepository.create({
-      titularDocNum: dto.docNum,
-      fechaIngreso:  dto.fechaIngreso,
-      fechaSalida:   dto.fechaSalida,
-      motivo:        dto.motivo,
-      aceptaTerminos: dto.aceptaTerminos,
-      canalOrigen:   dto.canalOrigen ?? 'directo',
-      notas:         dto.notas,
-      estado:        'pendiente',
-      precioTotal:   0,
-    });
-
     const titular      = this.guestsService.buildTitular(dto);
     const acompanantes = this.guestsService.buildAcompanantes(dto.guests ?? []);
-    reservation.guests = [titular, ...acompanantes];
+
+    const reservation = this.reservationRepository.create({
+      titularDocNum:  dto.docNum,
+      fechaIngreso:   dto.fechaIngreso,
+      fechaSalida:    dto.fechaSalida,
+      motivo:         dto.motivo,
+      aceptaTerminos: dto.aceptaTerminos,
+      canalOrigen:    dto.canalOrigen ?? 'directo',
+      notas:          dto.notas,
+      estado:         'pendiente',
+      precioTotal:    0,
+      guests:         [titular, ...acompanantes],
+    });
 
     return this.reservationRepository.save(reservation);
   }
@@ -151,7 +134,7 @@ export class ReservationsService {
     return reservation;
   }
 
-  // ── Actualizar (admin) ────────────────────────────────────────────────────
+  // ── Actualizar ────────────────────────────────────────────────────────────
 
   async update(id: number, dto: UpdateReservationDto): Promise<Reservation> {
     const reservation = await this.findOne(id);
@@ -178,8 +161,6 @@ export class ReservationsService {
 
   async updateEstado(id: number, dto: UpdateEstadoDto): Promise<Reservation> {
     const reservation = await this.findOne(id);
-    reservation.estado = dto.estado;
-    if (dto.notas) reservation.notas = dto.notas;
 
     const asignaciones = await this.huespedReservacionRepo.find({
       where: { reservacionId: id },
@@ -188,193 +169,68 @@ export class ReservationsService {
       .map((a) => a.habitacionId)
       .filter((hid): hid is number => !!hid);
 
-    if (dto.estado === 'check_in') {
-      for (const hid of habitacionIds) {
-        await this.habitacionRepo.update(hid, { estado: 'ocupada' });
-      }
-    }
+    await this.dataSource.transaction(async (manager) => {
+      const updateData: Partial<Reservation> = { estado: dto.estado };
+      if (dto.notas) updateData.notas = dto.notas;
+      await manager.update(Reservation, { id }, updateData);
 
-    if (dto.estado === 'check_out' || dto.estado === 'cancelada') {
-      for (const hid of habitacionIds) {
-        await this.habitacionRepo.update(hid, { estado: 'disponible' });
+      if (habitacionIds.length > 0) {
+        if (dto.estado === 'check_in') {
+          await manager
+            .createQueryBuilder()
+            .update('habitacion')
+            .set({ estado: 'ocupada' })
+            .whereInIds(habitacionIds)
+            .execute();
+        } else if (ESTADOS_QUE_LIBERAN_HABITACION.includes(dto.estado as any)) {
+          await manager
+            .createQueryBuilder()
+            .update('habitacion')
+            .set({ estado: 'disponible' })
+            .whereInIds(habitacionIds)
+            .execute();
+        }
       }
-    }
+    });
 
-    return this.reservationRepository.save(reservation);
+    return this.findOne(id);
   }
 
-  // ── Asignar habitación a huésped ──────────────────────────────────────────
+  // ── Asignar habitación ────────────────────────────────────────────────────
 
   async asignarHabitacion(
     id: number,
     dto: AsignarHabitacionDto,
   ): Promise<HuespedReservacion> {
     const reservation = await this.findOne(id);
-
-    const guest = reservation.guests.find((g) => g.id === dto.guestId);
-    if (!guest) {
-      throw new NotFoundException(
-        `Huésped #${dto.guestId} no pertenece a esta reserva`,
-      );
-    }
-
-    const habitacion = await this.habitacionRepo.findOne({
-      where: { id: dto.habitacionId },
-      relations: { tipo: true },
-    });
-    if (!habitacion) {
-      throw new NotFoundException(
-        `Habitación #${dto.habitacionId} no encontrada`,
-      );
-    }
-    if (habitacion.estado !== 'disponible') {
-      throw new BadRequestException(
-        `La habitación ${habitacion.numero} no está disponible`,
-      );
-    }
-
-    // Verificar si ya tiene asignación en esta reservación
-    const existente = await this.huespedReservacionRepo.findOne({
-      where: { reservacionId: id, guestId: dto.guestId },
-    });
-
-    const precioNoche = Number(habitacion.tipo.precioBase);
-
-    if (existente) {
-      if (
-        existente.habitacionId &&
-        existente.habitacionId !== dto.habitacionId
-      ) {
-        await this.habitacionRepo.update(existente.habitacionId, {
-          estado: 'disponible',
-        });
-      }
-      existente.habitacionId = dto.habitacionId;
-      existente.precioNoche = precioNoche;
-      await this.huespedReservacionRepo.save(existente);
-    } else {
-      const asignacion = this.huespedReservacionRepo.create({
-        guestId: dto.guestId,
-        reservacionId: id,
-        habitacionId: dto.habitacionId,
-        esTitular: guest.esTitular,
-        precioNoche,
-      });
-      await this.huespedReservacionRepo.save(asignacion);
-    }
-
-    const asignacion = await this.huespedReservacionRepo.findOne({
-      where: { reservacionId: id, guestId: dto.guestId },
-      relations: { habitacion: true },
-    });
-
-    if (!asignacion) {
-      throw new NotFoundException('Asignación no encontrada');
-    }
-
-    return asignacion;
+    return this.roomsService.asignarHabitacion(reservation, dto);
   }
 
-  // ── Desasignar habitación de un huésped ───────────────────────────────────
+  // ── Desasignar habitación ─────────────────────────────────────────────────
 
   async desasignarHabitacion(reservacionId: number, guestId: number): Promise<void> {
-    const asignacion = await this.huespedReservacionRepo.findOne({
-      where: { reservacionId, guestId },
-    });
-
-    if (!asignacion) {
-      throw new NotFoundException(
-        `No hay habitación asignada al huésped #${guestId} en esta reserva`,
-      );
-    }
-
-    if (asignacion.habitacionId) {
-      await this.habitacionRepo.update(asignacion.habitacionId, { estado: 'disponible' });
-    }
-
-    await this.huespedReservacionRepo.remove(asignacion);
+    return this.roomsService.desasignarHabitacion(reservacionId, guestId);
   }
 
-  // ── Ver asignaciones de habitaciones ──────────────────────────────────────
+  // ── Ver asignaciones ──────────────────────────────────────────────────────
 
   async findAsignaciones(reservacionId: number) {
     const reservation = await this.findOne(reservacionId);
-
-    const asignaciones = await this.huespedReservacionRepo.find({
-      where: { reservacionId },
-      relations: { habitacion: { tipo: true } },
-    });
-
-    const noches = Math.ceil(
-      (new Date(reservation.fechaSalida).getTime() - new Date(reservation.fechaIngreso).getTime())
-      / (1000 * 60 * 60 * 24),
-    );
-
-    return asignaciones.map((a) => ({
-      guestId:     a.guestId,
-      habitacionId: a.habitacionId,
-      numero:      a.habitacion?.numero,
-      piso:        a.habitacion?.piso,
-      tipo:        a.habitacion?.tipo?.nombre,
-      precioNoche: Number(a.precioNoche ?? a.habitacion?.tipo?.precioBase ?? 0),
-      noches,
-      subtotal:    Number(a.precioNoche ?? a.habitacion?.tipo?.precioBase ?? 0) * noches,
-      esTitular:   a.esTitular,
-    }));
+    return this.roomsService.findAsignaciones(reservation);
   }
 
   // ── Agregar servicio ──────────────────────────────────────────────────────
 
   async agregarServicio(id: number, dto: AgregarServicioDto): Promise<void> {
     await this.findOne(id);
-
-    const servicio = await this.servicioRepo.findOne({
-      where: { id: dto.servicioId },
-    });
-    if (!servicio) {
-      throw new NotFoundException(`Servicio #${dto.servicioId} no encontrado`);
-    }
-
-    await this.reservationRepository
-      .createQueryBuilder()
-      .insert()
-      .into('reservacion_servicio')
-      .values({
-        reservacionId: id,
-        servicioId: dto.servicioId,
-        cantidad: dto.cantidad ?? 1,
-        precioUnitario: Number(servicio.precio),
-        fechaServicio: dto.fecha ?? null,
-        notas: dto.notas ?? null,
-      })
-      .execute();
+    return this.itemsService.agregarServicio(id, dto);
   }
 
   // ── Agregar actividad ─────────────────────────────────────────────────────
 
   async agregarActividad(id: number, dto: AgregarActividadDto): Promise<void> {
     await this.findOne(id);
-
-    const evento = await this.eventoRepo.findOne({
-      where: { id: dto.eventoId },
-      relations: { actividad: true },
-    });
-    if (!evento) {
-      throw new NotFoundException(`Evento #${dto.eventoId} no encontrado`);
-    }
-
-    await this.reservationRepository
-      .createQueryBuilder()
-      .insert()
-      .into('reservacion_actividad')
-      .values({
-        reservacionId: id,
-        eventoId: dto.eventoId,
-        cantidadPersonas: dto.cantidadPersonas,
-        precioUnitario: Number(evento.actividad.precio),
-        notas: dto.notas ?? null,
-      })
-      .execute();
+    return this.itemsService.agregarActividad(id, dto);
   }
 
   // ── Asignar plan ──────────────────────────────────────────────────────────
@@ -395,7 +251,7 @@ export class ReservationsService {
       );
     }
 
-    reservation.planId     = dto.planId;
+    reservation.planId      = dto.planId;
     reservation.precioTotal = Number(plan.precioPersona) * cantPersonas;
 
     return this.reservationRepository.save(reservation);
@@ -404,19 +260,18 @@ export class ReservationsService {
   // ── Quitar plan ───────────────────────────────────────────────────────────
 
   async quitarPlan(id: number): Promise<Reservation> {
-    await this.reservationRepository.update(id, {
-      planId:      null as any,
-      precioTotal: 0,
-    });
+    await this.reservationRepository
+      .createQueryBuilder()
+      .update(Reservation)
+      .set({ planId: () => 'NULL', precioTotal: 0 })
+      .where('id = :id', { id })
+      .execute();
     return this.findOne(id);
   }
 
   // ── Actualizar datos generales (admin) ────────────────────────────────────
 
-  async updateAdmin(
-    id: number,
-    dto: UpdateReservationAdminDto,
-  ): Promise<Reservation> {
+  async updateAdmin(id: number, dto: UpdateReservationAdminDto): Promise<Reservation> {
     const reservation = await this.findOne(id);
     Object.assign(reservation, dto);
     return this.reservationRepository.save(reservation);
@@ -426,100 +281,14 @@ export class ReservationsService {
 
   async calcularDesglose(id: number) {
     const reservation = await this.findOne(id);
-
-    const noches = Math.ceil(
-      (new Date(reservation.fechaSalida).getTime() - new Date(reservation.fechaIngreso).getTime())
-      / (1000 * 60 * 60 * 24),
-    );
-
-    // Habitaciones
-    const asignaciones = await this.huespedReservacionRepo.find({
-      where: { reservacionId: id },
-      relations: { habitacion: { tipo: true } },
-    });
-
-    const habitaciones = asignaciones
-      .filter((a) => a.habitacionId)
-      .map((a) => {
-        const precioNoche = Number(a.precioNoche ?? a.habitacion?.tipo?.precioBase ?? 0);
-        return {
-          guestId:      a.guestId,
-          habitacionId: a.habitacionId!,
-          numero:       a.habitacion?.numero ?? '',
-          precioNoche,
-          noches,
-          subtotal:     precioNoche * noches,
-        };
-      });
-
-    // Servicios
-    const serviciosAsignados = await this.reservacionServicioRepo.find({
-      where: { reservacionId: id },
-      relations: { servicio: true },
-    });
-
-    const servicios = serviciosAsignados.map((s) => ({
-      servicioId:     s.servicioId,
-      nombre:         s.servicio?.nombre ?? '',
-      cantidad:       s.cantidad,
-      precioUnitario: Number(s.precioUnitario),
-      subtotal:       Number(s.precioUnitario) * s.cantidad,
-      fecha:          s.fechaServicio,
-    }));
-
-    // Actividades
-    const actividadesAsignadas = await this.reservacionActividadRepo.find({
-      where: { reservacionId: id },
-      relations: { evento: { actividad: true } },
-    });
-
-    const actividades = actividadesAsignadas.map((a) => ({
-      eventoId:         a.eventoId,
-      nombre:           a.evento?.actividad?.nombre ?? '',
-      fecha:            a.evento?.fecha ?? '',
-      cantidadPersonas: a.cantidadPersonas,
-      precioUnitario:   Number(a.precioUnitario),
-      subtotal:         Number(a.precioUnitario) * a.cantidadPersonas,
-    }));
-
-    // Totales por sección
-    const subtotalHabitaciones = habitaciones.reduce((s, h) => s + h.subtotal, 0);
-    const subtotalServicios     = servicios.reduce((s, sv) => s + sv.subtotal, 0);
-    const subtotalActividades   = actividades.reduce((s, a) => s + a.subtotal, 0);
-
-    const conPlan = !!reservation.planId;
-    const total   = conPlan
-      ? Number(reservation.precioTotal)
-      : subtotalHabitaciones + subtotalServicios + subtotalActividades;
-
-    // Pagos
-    const pagos  = await this.pagoRepo.find({ where: { reservacionId: id } });
-    const pagado = pagos
-      .filter((p) => p.estado !== 'fallido' && p.estado !== 'reembolsado')
-      .reduce((s, p) => s + Number(p.monto), 0);
-
-    return {
-      reservacionId: id,
-      conPlan,
-      planId:        reservation.planId,
-      noches,
-      habitaciones,
-      servicios,
-      actividades,
-      subtotalHabitaciones,
-      subtotalServicios,
-      subtotalActividades,
-      total,
-      pagado,
-      pendiente: total - pagado,
-    };
+    return this.pricingService.calcularDesglose(reservation);
   }
 
-  // ── Helpers privados ──────────────────────────────────────────────────────
+  // ── Helper privado ────────────────────────────────────────────────────────
 
   private validateDates(fechaIngreso: string, fechaSalida: string): void {
     const ingreso = new Date(fechaIngreso);
-    const salida = new Date(fechaSalida);
+    const salida  = new Date(fechaSalida);
 
     if (salida <= ingreso) {
       throw new BadRequestException(

@@ -6,10 +6,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Guest } from './entities/guest.entity';
 import { HuespedReservacion } from '../reservations/entities/huesped-reservacion.entity';
-import { Habitacion } from '../habitacion/entities/habitacion.entity';
 import { CreateGuestDto } from './dto/create-guest.dto';
 import { UpdateGuestDto } from './dto/update-guest.dto';
 import { CreateReservationDto } from '../reservations/dto/create-reservation.dto';
+import { HabitacionService } from '../habitacion/habitacion.service';
+import { ESTADOS_ACTIVOS } from '../reservations/constants/reservation-estado.const';
 
 @Injectable()
 export class GuestsService {
@@ -20,8 +21,7 @@ export class GuestsService {
     @InjectRepository(HuespedReservacion)
     private readonly huespedReservacionRepo: Repository<HuespedReservacion>,
 
-    @InjectRepository(Habitacion)
-    private readonly habitacionRepo: Repository<Habitacion>,
+    private readonly habitacionService: HabitacionService,
   ) {}
 
   // ── Usado internamente por ReservationsService ─────────────────────────────
@@ -120,11 +120,11 @@ export class GuestsService {
           .innerJoin('hr.reservacion', 'r')
           .where('hr.habitacionId = :hid', { hid: asignacion.habitacionId })
           .andWhere('hr.guestId != :guestId', { guestId: id })
-          .andWhere("r.estado IN ('pendiente', 'confirmada', 'check_in')")
+          .andWhere('r.estado IN (:...estados)', { estados: ESTADOS_ACTIVOS })
           .getCount();
 
         if (otrasActivas === 0) {
-          await this.habitacionRepo.update(asignacion.habitacionId, { estado: 'disponible' });
+          await this.habitacionService.liberar(asignacion.habitacionId);
         }
       }
 

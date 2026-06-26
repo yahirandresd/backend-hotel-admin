@@ -172,4 +172,58 @@ export class HabitacionService {
       esTitular:         hr.esTitular,
     }));
   }
+
+  // ── Gestión de estado físico ──────────────────────────────────────────────
+
+  async ocupar(habitacionId: number): Promise<void> {
+    await this.habitacionRepo.update(habitacionId, { estado: 'ocupada' });
+  }
+
+  async liberar(habitacionId: number): Promise<void> {
+    await this.habitacionRepo.update(habitacionId, { estado: 'disponible' });
+  }
+
+  async liberarMultiple(ids: number[]): Promise<void> {
+    if (ids.length === 0) return;
+    await this.habitacionRepo
+      .createQueryBuilder()
+      .update()
+      .set({ estado: 'disponible' })
+      .whereInIds(ids)
+      .execute();
+  }
+
+  async ocuparMultiple(ids: number[]): Promise<void> {
+    if (ids.length === 0) return;
+    await this.habitacionRepo
+      .createQueryBuilder()
+      .update()
+      .set({ estado: 'ocupada' })
+      .whereInIds(ids)
+      .execute();
+  }
+
+  async estaDisponibleEnRango(
+    habitacionId: number,
+    desde: string,
+    hasta: string,
+    excluyendoReservacionId?: number,
+  ): Promise<boolean> {
+    const qb = this.huespedReservacionRepo
+      .createQueryBuilder('hr')
+      .innerJoin('hr.reservacion', 'r')
+      .where('hr.habitacionId = :habitacionId', { habitacionId })
+      .andWhere('r.fechaIngreso < :hasta', { hasta })
+      .andWhere('r.fechaSalida > :desde', { desde })
+      .andWhere(`r.estado NOT IN (:...estados)`, {
+        estados: ['cancelada', 'no_show'],
+      });
+
+    if (excluyendoReservacionId) {
+      qb.andWhere('r.id != :excluyendoReservacionId', { excluyendoReservacionId });
+    }
+
+    const count = await qb.getCount();
+    return count === 0;
+  }
 }
