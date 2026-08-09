@@ -4,8 +4,6 @@ import { Repository } from 'typeorm';
 import { Reservation } from '../reservations/entities/reservation.entity';
 import { Pago } from '../pagos/entities/pago.entity';
 import { Habitacion } from '../habitacion/entities/habitacion.entity';
-import { ActividadEvento } from '../actividades/entities/actividad-evento.entity';
-import { ActividadEventoGasto } from '../actividades/entities/actividad-evento-gasto.entity';
 
 @Injectable()
 export class ReportesService {
@@ -18,12 +16,6 @@ export class ReportesService {
 
     @InjectRepository(Habitacion)
     private readonly habitacionRepo: Repository<Habitacion>,
-
-    @InjectRepository(ActividadEvento)
-    private readonly eventoRepo: Repository<ActividadEvento>,
-
-    @InjectRepository(ActividadEventoGasto)
-    private readonly gastoRepo: Repository<ActividadEventoGasto>,
   ) {}
 
   // ── Reporte de reservaciones por rango de fechas ──────────────────────────
@@ -136,76 +128,13 @@ export class ReportesService {
     };
   }
 
-  // ── Reporte de actividades y utilidad ────────────────────────────────────
-
-  async reporteActividades(desde: string, hasta: string) {
-    const eventos = await this.eventoRepo
-      .createQueryBuilder('evento')
-      .leftJoinAndSelect('evento.actividad', 'actividad')
-      .leftJoinAndSelect('evento.gastos', 'gastos')
-      .where('evento.fecha >= :desde', { desde })
-      .andWhere('evento.fecha <= :hasta', { hasta })
-      .orderBy('evento.fecha', 'ASC')
-      .getMany();
-
-    const reporte = await Promise.all(
-      eventos.map(async (evento) => {
-        const totalGastos = evento.gastos?.reduce(
-          (sum, g) => sum + Number(g.monto), 0,
-        ) ?? 0;
-
-        const ingresos = await this.eventoRepo
-          .createQueryBuilder('e')
-          .leftJoin('e.reservacionActividades', 'ra')
-          .select('SUM(ra.precioUnitario * ra.cantidadPersonas)', 'total')
-          .where('e.id = :id', { id: evento.id })
-          .getRawOne();
-
-        const totalIngresos = Number(ingresos?.total ?? 0);
-        const utilidad      = totalIngresos - totalGastos;
-
-        return {
-          eventoId:      evento.id,
-          actividad:     evento.actividad?.nombre ?? '',
-          fecha:         evento.fecha,
-          estado:        evento.estado,
-          totalIngresos,
-          totalGastos,
-          utilidad,
-          gastos:        evento.gastos?.map((g) => ({
-            concepto: g.concepto,
-            monto:    Number(g.monto),
-          })) ?? [],
-        };
-      }),
-    );
-
-    const totales = reporte.reduce(
-      (acc, r) => {
-        acc.totalIngresos += r.totalIngresos;
-        acc.totalGastos   += r.totalGastos;
-        acc.utilidad      += r.utilidad;
-        return acc;
-      },
-      { totalIngresos: 0, totalGastos: 0, utilidad: 0 },
-    );
-
-    return {
-      desde,
-      hasta,
-      totales,
-      eventos: reporte,
-    };
-  }
-
   // ── Reporte general del negocio ───────────────────────────────────────────
 
   async reporteGeneral(desde: string, hasta: string) {
-    const [reservaciones, ingresos, ocupacion, actividades] = await Promise.all([
+    const [reservaciones, ingresos, ocupacion] = await Promise.all([
       this.reporteReservaciones(desde, hasta),
       this.reporteIngresos(desde, hasta),
       this.reporteOcupacion(),
-      this.reporteActividades(desde, hasta),
     ]);
 
     return {
@@ -221,9 +150,6 @@ export class ReportesService {
       ocupacion: {
         porcentaje: ocupacion.porcentajeOcupacion,
         resumen:    ocupacion.resumen,
-      },
-      actividades: {
-        totales: actividades.totales,
       },
     };
   }

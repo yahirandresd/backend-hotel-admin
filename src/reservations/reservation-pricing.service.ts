@@ -2,8 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { HuespedReservacion } from './entities/huesped-reservacion.entity';
-import { ReservacionServicio } from './entities/reservacion-servicio.entity';
-import { ReservacionActividad } from '../actividades/entities/reservacion-actividad.entity';
 import { PagosService } from '../pagos/pagos.service';
 import { Reservation } from './entities/reservation.entity';
 
@@ -12,12 +10,6 @@ export class ReservationPricingService {
   constructor(
     @InjectRepository(HuespedReservacion)
     private readonly huespedReservacionRepo: Repository<HuespedReservacion>,
-
-    @InjectRepository(ReservacionServicio)
-    private readonly reservacionServicioRepo: Repository<ReservacionServicio>,
-
-    @InjectRepository(ReservacionActividad)
-    private readonly reservacionActividadRepo: Repository<ReservacionActividad>,
 
     private readonly pagosService: PagosService,
   ) {}
@@ -52,42 +44,12 @@ export class ReservationPricingService {
         };
       });
 
-    const serviciosAsignados = await this.reservacionServicioRepo.find({
-      where: { reservacionId: id },
-      relations: { servicio: true },
-    });
-
-    const servicios = serviciosAsignados.map((s) => ({
-      servicioId:     s.servicioId,
-      nombre:         s.servicio?.nombre ?? '',
-      cantidad:       s.cantidad,
-      precioUnitario: Number(s.precioUnitario),
-      subtotal:       Number(s.precioUnitario) * s.cantidad,
-      fecha:          s.fechaServicio,
-    }));
-
-    const actividadesAsignadas = await this.reservacionActividadRepo.find({
-      where: { reservacionId: id },
-      relations: { evento: { actividad: true } },
-    });
-
-    const actividades = actividadesAsignadas.map((a) => ({
-      eventoId:         a.eventoId,
-      nombre:           a.evento?.actividad?.nombre ?? '',
-      fecha:            a.evento?.fecha ?? '',
-      cantidadPersonas: a.cantidadPersonas,
-      precioUnitario:   Number(a.precioUnitario),
-      subtotal:         Number(a.precioUnitario) * a.cantidadPersonas,
-    }));
-
     const subtotalHabitaciones = habitaciones.reduce((s, h) => s + h.subtotal, 0);
-    const subtotalServicios     = servicios.reduce((s, sv) => s + sv.subtotal, 0);
-    const subtotalActividades   = actividades.reduce((s, a) => s + a.subtotal, 0);
 
     const conPlan = !!reservation.planId;
     const total   = conPlan
       ? Number(reservation.precioTotal)
-      : subtotalHabitaciones + subtotalServicios + subtotalActividades;
+      : subtotalHabitaciones;
 
     const pagado   = await this.pagosService.totalPorReservacion(id);
 
@@ -97,11 +59,7 @@ export class ReservationPricingService {
       planId:        reservation.planId,
       noches,
       habitaciones,
-      servicios,
-      actividades,
       subtotalHabitaciones,
-      subtotalServicios,
-      subtotalActividades,
       total,
       pagado,
       pendiente: total - pagado,

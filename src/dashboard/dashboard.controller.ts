@@ -36,10 +36,4 @@ export class DashboardController {
   proximasSalidas() {
     return this.dashboardService.proximasSalidas();
   }
-
-  // GET /api/dashboard/proximos-eventos
-  @Get('proximos-eventos')
-  proximosEventos() {
-    return this.dashboardService.proximosEventos();
-  }
 }

@@ -17,8 +17,6 @@ import { ReservationResponseDto, toReservationResponse } from './dto/reservation
 import {
   UpdateEstadoDto,
   AsignarHabitacionDto,
-  AgregarServicioDto,
-  AgregarActividadDto,
   AsignarPlanDto,
   UpdateReservationAdminDto,
 } from './dto/admin-reservation.dto';
@@ -123,28 +121,6 @@ export class ReservationsController {
     @Param('guestId', ParseIntPipe) guestId: number,
   ): Promise<void> {
     return this.reservationsService.desasignarHabitacion(id, guestId);
-  }
-
-  // POST /api/reservations/:id/servicios
-  @Post(':id/servicios')
-  @HttpCode(HttpStatus.OK)
-  async agregarServicio(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: AgregarServicioDto,
-  ): Promise<{ message: string }> {
-    await this.reservationsService.agregarServicio(id, dto);
-    return { message: 'Servicio agregado correctamente' };
-  }
-
-  // POST /api/reservations/:id/actividades
-  @Post(':id/actividades')
-  @HttpCode(HttpStatus.OK)
-  async agregarActividad(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: AgregarActividadDto,
-  ): Promise<{ message: string }> {
-    await this.reservationsService.agregarActividad(id, dto);
-    return { message: 'Actividad agregada correctamente' };
   }
 
   // GET /api/reservations/:id/desglose

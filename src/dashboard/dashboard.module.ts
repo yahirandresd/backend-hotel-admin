@@ -5,7 +5,6 @@ import { DashboardController } from './dashboard.controller';
 import { Reservation } from '../reservations/entities/reservation.entity';
 import { Pago } from '../pagos/entities/pago.entity';
 import { Habitacion } from '../habitacion/entities/habitacion.entity';
-import { ActividadEvento } from '../actividades/entities/actividad-evento.entity';
 
 @Module({
   imports: [
@@ -13,7 +12,6 @@ import { ActividadEvento } from '../actividades/entities/actividad-evento.entity
       Reservation,
       Pago,
       Habitacion,
-      ActividadEvento,
     ]),
   ],
   controllers: [DashboardController],

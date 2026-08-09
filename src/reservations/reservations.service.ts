@@ -12,15 +12,12 @@ import { ReservationLink } from '../reservation-links/entities/reservation-link.
 import { GuestsService } from '../guests/guests.service';
 import { ReservationLinksService } from '../reservation-links/reservation-links.service';
 import { ReservationRoomsService } from './reservation-rooms.service';
-import { ReservationItemsService } from './reservation-items.service';
 import { ReservationPricingService } from './reservation-pricing.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import {
   UpdateEstadoDto,
   AsignarHabitacionDto,
-  AgregarServicioDto,
-  AgregarActividadDto,
   AsignarPlanDto,
   UpdateReservationAdminDto,
 } from './dto/admin-reservation.dto';
@@ -42,7 +39,6 @@ export class ReservationsService {
     private readonly guestsService: GuestsService,
     private readonly linksService: ReservationLinksService,
     private readonly roomsService: ReservationRoomsService,
-    private readonly itemsService: ReservationItemsService,
     private readonly pricingService: ReservationPricingService,
   ) {}
 
@@ -217,20 +213,6 @@ export class ReservationsService {
   async findAsignaciones(reservacionId: number) {
     const reservation = await this.findOne(reservacionId);
     return this.roomsService.findAsignaciones(reservation);
-  }
-
-  // ── Agregar servicio ──────────────────────────────────────────────────────
-
-  async agregarServicio(id: number, dto: AgregarServicioDto): Promise<void> {
-    await this.findOne(id);
-    return this.itemsService.agregarServicio(id, dto);
-  }
-
-  // ── Agregar actividad ─────────────────────────────────────────────────────
-
-  async agregarActividad(id: number, dto: AgregarActividadDto): Promise<void> {
-    await this.findOne(id);
-    return this.itemsService.agregarActividad(id, dto);
   }
 
   // ── Asignar plan ──────────────────────────────────────────────────────────

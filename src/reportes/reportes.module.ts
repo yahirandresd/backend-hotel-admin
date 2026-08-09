@@ -5,8 +5,6 @@ import { ReportesController } from './reportes.controller';
 import { Reservation } from '../reservations/entities/reservation.entity';
 import { Pago } from '../pagos/entities/pago.entity';
 import { Habitacion } from '../habitacion/entities/habitacion.entity';
-import { ActividadEvento } from '../actividades/entities/actividad-evento.entity';
-import { ActividadEventoGasto } from '../actividades/entities/actividad-evento-gasto.entity';
 
 @Module({
   imports: [
@@ -14,8 +12,6 @@ import { ActividadEventoGasto } from '../actividades/entities/actividad-evento-g
       Reservation,
       Pago,
       Habitacion,
-      ActividadEvento,
-      ActividadEventoGasto,
     ]),
   ],
   controllers: [ReportesController],

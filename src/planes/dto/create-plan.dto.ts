@@ -1,34 +1,8 @@
 import {
   IsString, IsNotEmpty, IsOptional, IsBoolean,
-  IsInt, IsPositive, IsArray, ValidateNested, Length,
+  IsInt, IsPositive, Length,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-
-export class PlanActividadDto {
-  @IsInt()
-  @IsPositive()
-  @Type(() => Number)
-  actividadId!: number;
-
-  @IsOptional()
-  @IsInt()
-  @IsPositive()
-  @Type(() => Number)
-  cantidad?: number;
-}
-
-export class PlanServicioDto {
-  @IsInt()
-  @IsPositive()
-  @Type(() => Number)
-  servicioId!: number;
-
-  @IsOptional()
-  @IsInt()
-  @IsPositive()
-  @Type(() => Number)
-  cantidad?: number;
-}
 
 export class CreatePlanDto {
   @IsString()
@@ -58,16 +32,4 @@ export class CreatePlanDto {
   @IsOptional()
   @IsBoolean()
   activo?: boolean;
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => PlanActividadDto)
-  actividades?: PlanActividadDto[];
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => PlanServicioDto)
-  servicios?: PlanServicioDto[];
 }

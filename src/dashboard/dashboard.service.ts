@@ -4,7 +4,6 @@ import { Repository, Between } from 'typeorm';
 import { Reservation } from '../reservations/entities/reservation.entity';
 import { Pago } from '../pagos/entities/pago.entity';
 import { Habitacion } from '../habitacion/entities/habitacion.entity';
-import { ActividadEvento } from '../actividades/entities/actividad-evento.entity';
 
 @Injectable()
 export class DashboardService {
@@ -17,9 +16,6 @@ export class DashboardService {
 
     @InjectRepository(Habitacion)
     private readonly habitacionRepo: Repository<Habitacion>,
-
-    @InjectRepository(ActividadEvento)
-    private readonly eventoRepo: Repository<ActividadEvento>,
   ) {}
 
   // ── Resumen general ───────────────────────────────────────────────────────
@@ -55,16 +51,6 @@ export class DashboardService {
 
     const totalHabitaciones = await this.habitacionRepo.count();
 
-    // Eventos de actividades este mes
-    const eventosMes = await this.eventoRepo.count({
-      where: {
-        fecha: Between(
-          inicioMes.toISOString().split('T')[0],
-          finMes.toISOString().split('T')[0],
-        ) as any,
-      },
-    });
-
     // Reservaciones activas hoy (check-in <= hoy <= check-out)
     const reservacionesActivas = await this.reservationRepo
       .createQueryBuilder('r')
@@ -85,7 +71,6 @@ export class DashboardService {
                 100,
             )
           : 0,
-      eventosMes,
       reservacionesActivas,
     };
   }
@@ -173,24 +158,6 @@ export class DashboardService {
       .createQueryBuilder('r')
       .where('r.fechaSalida IN (:...fechas)', { fechas: [hoyStr, mananaStr] })
       .orderBy('r.fechaSalida', 'ASC')
-      .getMany();
-  }
-
-  // ── Próximos eventos de actividades ───────────────────────────────────────
-
-  async proximosEventos() {
-    const hoy = new Date().toISOString().split('T')[0];
-    const en7dias = new Date();
-    en7dias.setDate(en7dias.getDate() + 7);
-    const en7diasStr = en7dias.toISOString().split('T')[0];
-
-    return this.eventoRepo
-      .createQueryBuilder('evento')
-      .leftJoinAndSelect('evento.actividad', 'actividad')
-      .leftJoinAndSelect('evento.gastos', 'gastos')
-      .where('evento.fecha BETWEEN :hoy AND :fin', { hoy, fin: en7diasStr })
-      .andWhere('evento.estado = :estado', { estado: 'programada' })
-      .orderBy('evento.fecha', 'ASC')
       .getMany();
   }
 }

@@ -36,17 +36,6 @@ export class ReportesController {
     return this.reportesService.reporteOcupacion();
   }
 
-  @Get('actividades')
-  reporteActividades(
-    @Query('desde') desde: string,
-    @Query('hasta') hasta: string,
-  ) {
-    return this.reportesService.reporteActividades(
-      desde,
-      hasta,
-    );
-  }
-
   @Get('general')
   reporteGeneral(
     @Query('desde') desde: string,

@@ -30,43 +30,6 @@ export class AsignarHabitacionDto {
   habitacionId!: number;
 }
 
-export class AgregarServicioDto {
-  @IsInt()
-  @IsPositive()
-  @Type(() => Number)
-  servicioId!: number;
-
-  @IsOptional()
-  @IsInt()
-  @IsPositive()
-  @Type(() => Number)
-  cantidad?: number;
-
-  @IsOptional()
-  @IsString()
-  fecha?: string;
-
-  @IsOptional()
-  @IsString()
-  notas?: string;
-}
-
-export class AgregarActividadDto {
-  @IsInt()
-  @IsPositive()
-  @Type(() => Number)
-  eventoId!: number;
-
-  @IsInt()
-  @IsPositive()
-  @Type(() => Number)
-  cantidadPersonas!: number;
-
-  @IsOptional()
-  @IsString()
-  notas?: string;
-}
-
 export class AsignarPlanDto {
   @IsInt()
   @IsPositive()
