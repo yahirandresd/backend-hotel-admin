@@ -7,6 +7,9 @@ export class ReservationLink {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column({ name: 'hotel_id', nullable: true })
+  hotelId?: number;
+
   @Column({ unique: true, length: 7 })
   code!: string;
 

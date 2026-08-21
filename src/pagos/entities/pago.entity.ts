@@ -9,6 +9,9 @@ export class Pago {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column({ name: 'hotel_id', nullable: true })
+  hotelId?: number;
+
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   monto!: number;
 

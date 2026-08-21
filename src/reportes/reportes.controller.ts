@@ -1,4 +1,5 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Req } from '@nestjs/common';
+import type { Request } from 'express';
 import { ReportesService } from './reportes.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 
@@ -13,37 +14,31 @@ export class ReportesController {
   reporteReservaciones(
     @Query('desde') desde: string,
     @Query('hasta') hasta: string,
+    @Req() req: Request,
   ) {
-    return this.reportesService.reporteReservaciones(
-      desde,
-      hasta,
-    );
+    return this.reportesService.reporteReservaciones(desde, hasta, (req as any).user.hotelId);
   }
 
   @Get('ingresos')
   reporteIngresos(
     @Query('desde') desde: string,
     @Query('hasta') hasta: string,
+    @Req() req: Request,
   ) {
-    return this.reportesService.reporteIngresos(
-      desde,
-      hasta,
-    );
+    return this.reportesService.reporteIngresos(desde, hasta, (req as any).user.hotelId);
   }
 
   @Get('ocupacion')
-  reporteOcupacion() {
-    return this.reportesService.reporteOcupacion();
+  reporteOcupacion(@Req() req: Request) {
+    return this.reportesService.reporteOcupacion((req as any).user.hotelId);
   }
 
   @Get('general')
   reporteGeneral(
     @Query('desde') desde: string,
     @Query('hasta') hasta: string,
+    @Req() req: Request,
   ) {
-    return this.reportesService.reporteGeneral(
-      desde,
-      hasta,
-    );
+    return this.reportesService.reporteGeneral(desde, hasta, (req as any).user.hotelId);
   }
 }

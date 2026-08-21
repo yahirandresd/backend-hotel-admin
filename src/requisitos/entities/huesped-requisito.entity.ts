@@ -9,6 +9,9 @@ export class HuespedRequisito {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column({ name: 'hotel_id', nullable: true })
+  hotelId?: number;
+
   @Column()
   huespedId!: number;
 

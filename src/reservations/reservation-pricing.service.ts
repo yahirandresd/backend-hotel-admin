@@ -26,7 +26,7 @@ export class ReservationPricingService {
     const noches = this.calcularNoches(reservation.fechaIngreso, reservation.fechaSalida);
 
     const asignaciones = await this.huespedReservacionRepo.find({
-      where: { reservacionId: id },
+      where: { reservacionId: id, hotelId: reservation.hotelId },
       relations: { habitacion: { tipo: true } },
     });
 
@@ -51,7 +51,7 @@ export class ReservationPricingService {
       ? Number(reservation.precioTotal)
       : subtotalHabitaciones;
 
-    const pagado   = await this.pagosService.totalPorReservacion(id);
+    const pagado   = await this.pagosService.totalPorReservacion(id, reservation.hotelId!);
 
     return {
       reservacionId: id,

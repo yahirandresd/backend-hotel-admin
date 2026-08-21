@@ -1,10 +1,12 @@
 import {
+  Inject,
   Injectable,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
+import { REQUEST_MANAGER } from '../database/tenant-context';
 import { Reservation } from './entities/reservation.entity';
 import { HuespedReservacion } from './entities/huesped-reservacion.entity';
 import { Plan } from '../planes/entities/plan.entity';
@@ -35,7 +37,9 @@ export class ReservationsService {
     @InjectRepository(Plan)
     private readonly planRepo: Repository<Plan>,
 
-    private readonly dataSource: DataSource,
+    @Inject(REQUEST_MANAGER)
+    private readonly manager: EntityManager,
+
     private readonly guestsService: GuestsService,
     private readonly linksService: ReservationLinksService,
     private readonly roomsService: ReservationRoomsService,
@@ -45,18 +49,20 @@ export class ReservationsService {
   // ── Crear (cliente) ───────────────────────────────────────────────────────
 
   async create(dto: CreateReservationDto, code: string): Promise<Reservation> {
-    await this.linksService.validate(code);
+    const link = await this.linksService.validate(code);
+    const hotelId = link.hotelId!;
     this.validateDates(dto.fechaIngreso, dto.fechaSalida);
 
     if (!dto.aceptaTerminos) {
       throw new BadRequestException('Debe aceptar los términos y condiciones');
     }
 
-    const titular      = this.guestsService.buildTitular(dto);
-    const acompanantes = this.guestsService.buildAcompanantes(dto.guests ?? []);
+    const titular      = this.guestsService.buildTitular(dto, hotelId);
+    const acompanantes = this.guestsService.buildAcompanantes(dto.guests ?? [], hotelId);
 
-    return this.dataSource.transaction(async (manager) => {
+    return this.manager.transaction(async (manager) => {
       const reservation = manager.create(Reservation, {
+        hotelId,
         titularDocNum:  dto.docNum,
         fechaIngreso:   dto.fechaIngreso,
         fechaSalida:    dto.fechaSalida,
@@ -76,17 +82,18 @@ export class ReservationsService {
 
   // ── Crear (admin) ────────────────────────────────────────────────────────
 
-  async createAdmin(dto: CreateReservationDto): Promise<Reservation> {
+  async createAdmin(dto: CreateReservationDto, hotelId: number): Promise<Reservation> {
     this.validateDates(dto.fechaIngreso, dto.fechaSalida);
 
     if (!dto.aceptaTerminos) {
       throw new BadRequestException('Debe aceptar los términos y condiciones');
     }
 
-    const titular      = this.guestsService.buildTitular(dto);
-    const acompanantes = this.guestsService.buildAcompanantes(dto.guests ?? []);
+    const titular      = this.guestsService.buildTitular(dto, hotelId);
+    const acompanantes = this.guestsService.buildAcompanantes(dto.guests ?? [], hotelId);
 
     const reservation = this.reservationRepository.create({
+      hotelId,
       titularDocNum:  dto.docNum,
       fechaIngreso:   dto.fechaIngreso,
       fechaSalida:    dto.fechaSalida,
@@ -104,8 +111,9 @@ export class ReservationsService {
 
   // ── Listar todos ──────────────────────────────────────────────────────────
 
-  async findAll(): Promise<Reservation[]> {
+  async findAll(hotelId: number): Promise<Reservation[]> {
     return this.reservationRepository.find({
+      where: { hotelId },
       relations: { guests: true },
       order: {
         createdAt: 'DESC',
@@ -116,9 +124,9 @@ export class ReservationsService {
 
   // ── Obtener uno ───────────────────────────────────────────────────────────
 
-  async findOne(id: number): Promise<Reservation> {
+  async findOne(id: number, hotelId: number): Promise<Reservation> {
     const reservation = await this.reservationRepository.findOne({
-      where: { id },
+      where: { id, hotelId },
       relations: { guests: true, pagos: true, plan: true },
       order: { guests: { esTitular: 'DESC' } },
     });
@@ -132,8 +140,8 @@ export class ReservationsService {
 
   // ── Actualizar ────────────────────────────────────────────────────────────
 
-  async update(id: number, dto: UpdateReservationDto): Promise<Reservation> {
-    const reservation = await this.findOne(id);
+  async update(id: number, dto: UpdateReservationDto, hotelId: number): Promise<Reservation> {
+    const reservation = await this.findOne(id, hotelId);
 
     if (dto.fechaIngreso || dto.fechaSalida) {
       this.validateDates(
@@ -148,27 +156,27 @@ export class ReservationsService {
 
   // ── Eliminar ──────────────────────────────────────────────────────────────
 
-  async remove(id: number): Promise<void> {
-    const reservation = await this.findOne(id);
+  async remove(id: number, hotelId: number): Promise<void> {
+    const reservation = await this.findOne(id, hotelId);
     await this.reservationRepository.remove(reservation);
   }
 
   // ── Cambiar estado ────────────────────────────────────────────────────────
 
-  async updateEstado(id: number, dto: UpdateEstadoDto): Promise<Reservation> {
-    const reservation = await this.findOne(id);
+  async updateEstado(id: number, dto: UpdateEstadoDto, hotelId: number): Promise<Reservation> {
+    const reservation = await this.findOne(id, hotelId);
 
     const asignaciones = await this.huespedReservacionRepo.find({
-      where: { reservacionId: id },
+      where: { reservacionId: id, hotelId },
     });
     const habitacionIds = asignaciones
       .map((a) => a.habitacionId)
       .filter((hid): hid is number => !!hid);
 
-    await this.dataSource.transaction(async (manager) => {
+    await this.manager.transaction(async (manager) => {
       const updateData: Partial<Reservation> = { estado: dto.estado };
       if (dto.notas) updateData.notas = dto.notas;
-      await manager.update(Reservation, { id }, updateData);
+      await manager.update(Reservation, { id, hotelId }, updateData);
 
       if (habitacionIds.length > 0) {
         if (dto.estado === 'check_in') {
@@ -189,7 +197,7 @@ export class ReservationsService {
       }
     });
 
-    return this.findOne(id);
+    return this.findOne(id, hotelId);
   }
 
   // ── Asignar habitación ────────────────────────────────────────────────────
@@ -197,30 +205,31 @@ export class ReservationsService {
   async asignarHabitacion(
     id: number,
     dto: AsignarHabitacionDto,
+    hotelId: number,
   ): Promise<HuespedReservacion> {
-    const reservation = await this.findOne(id);
+    const reservation = await this.findOne(id, hotelId);
     return this.roomsService.asignarHabitacion(reservation, dto);
   }
 
   // ── Desasignar habitación ─────────────────────────────────────────────────
 
-  async desasignarHabitacion(reservacionId: number, guestId: number): Promise<void> {
-    return this.roomsService.desasignarHabitacion(reservacionId, guestId);
+  async desasignarHabitacion(reservacionId: number, guestId: number, hotelId: number): Promise<void> {
+    return this.roomsService.desasignarHabitacion(reservacionId, guestId, hotelId);
   }
 
   // ── Ver asignaciones ──────────────────────────────────────────────────────
 
-  async findAsignaciones(reservacionId: number) {
-    const reservation = await this.findOne(reservacionId);
+  async findAsignaciones(reservacionId: number, hotelId: number) {
+    const reservation = await this.findOne(reservacionId, hotelId);
     return this.roomsService.findAsignaciones(reservation);
   }
 
   // ── Asignar plan ──────────────────────────────────────────────────────────
 
-  async asignarPlan(id: number, dto: AsignarPlanDto): Promise<Reservation> {
-    const reservation = await this.findOne(id);
+  async asignarPlan(id: number, dto: AsignarPlanDto, hotelId: number): Promise<Reservation> {
+    const reservation = await this.findOne(id, hotelId);
 
-    const plan = await this.planRepo.findOne({ where: { id: dto.planId } });
+    const plan = await this.planRepo.findOne({ where: { id: dto.planId, hotelId } });
     if (!plan) {
       throw new NotFoundException(`Plan #${dto.planId} no encontrado`);
     }
@@ -241,28 +250,28 @@ export class ReservationsService {
 
   // ── Quitar plan ───────────────────────────────────────────────────────────
 
-  async quitarPlan(id: number): Promise<Reservation> {
+  async quitarPlan(id: number, hotelId: number): Promise<Reservation> {
     await this.reservationRepository
       .createQueryBuilder()
       .update(Reservation)
       .set({ planId: () => 'NULL', precioTotal: 0 })
-      .where('id = :id', { id })
+      .where({ id, hotelId })
       .execute();
-    return this.findOne(id);
+    return this.findOne(id, hotelId);
   }
 
   // ── Actualizar datos generales (admin) ────────────────────────────────────
 
-  async updateAdmin(id: number, dto: UpdateReservationAdminDto): Promise<Reservation> {
-    const reservation = await this.findOne(id);
+  async updateAdmin(id: number, dto: UpdateReservationAdminDto, hotelId: number): Promise<Reservation> {
+    const reservation = await this.findOne(id, hotelId);
     Object.assign(reservation, dto);
     return this.reservationRepository.save(reservation);
   }
 
   // ── Desglose financiero ───────────────────────────────────────────────────
 
-  async calcularDesglose(id: number) {
-    const reservation = await this.findOne(id);
+  async calcularDesglose(id: number, hotelId: number) {
+    const reservation = await this.findOne(id, hotelId);
     return this.pricingService.calcularDesglose(reservation);
   }
 

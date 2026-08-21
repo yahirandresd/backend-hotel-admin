@@ -26,8 +26,9 @@ export class GuestsService {
 
   // ── Usado internamente por ReservationsService ─────────────────────────────
 
-  buildTitular(dto: CreateReservationDto): Guest {
+  buildTitular(dto: CreateReservationDto, hotelId: number): Guest {
     return this.guestRepository.create({
+      hotelId,
       docType:          dto.docType,
       docNum:           dto.docNum,
       nombre:           dto.nombre,
@@ -42,9 +43,9 @@ export class GuestsService {
     });
   }
 
-  buildAcompanantes(guests: CreateGuestDto[]): Guest[] {
+  buildAcompanantes(guests: CreateGuestDto[], hotelId: number): Guest[] {
     return guests.map((g) =>
-      this.guestRepository.create({ ...g, esTitular: false }),
+      this.guestRepository.create({ ...g, hotelId, esTitular: false }),
     );
   }
 
@@ -76,41 +77,42 @@ export class GuestsService {
 
   // ── Endpoints propios ──────────────────────────────────────────────────────
 
-  async findAll(): Promise<Guest[]> {
+  async findAll(hotelId: number): Promise<Guest[]> {
     return this.guestRepository.find({
+      where: { hotelId },
       relations: ['reservation'],
       order: { reservationId: 'ASC', esTitular: 'DESC' },
     });
   }
 
-  async findByReservation(reservationId: number): Promise<Guest[]> {
+  async findByReservation(reservationId: number, hotelId: number): Promise<Guest[]> {
     return this.guestRepository.find({
-      where: { reservationId },
+      where: { reservationId, hotelId },
       relations: ['reservation'],
       order: { esTitular: 'DESC' },
     });
   }
 
-  async findOne(id: number): Promise<Guest> {
+  async findOne(id: number, hotelId: number): Promise<Guest> {
     const guest = await this.guestRepository.findOne({
-      where: { id },
+      where: { id, hotelId },
       relations: ['reservation'],
     });
     if (!guest) throw new NotFoundException(`Huésped #${id} no encontrado`);
     return guest;
   }
 
-  async update(id: number, dto: UpdateGuestDto): Promise<Guest> {
-    const guest = await this.findOne(id);
+  async update(id: number, dto: UpdateGuestDto, hotelId: number): Promise<Guest> {
+    const guest = await this.findOne(id, hotelId);
     Object.assign(guest, dto);
     return this.guestRepository.save(guest);
   }
 
-  async remove(id: number): Promise<void> {
-    const guest = await this.findOne(id);
+  async remove(id: number, hotelId: number): Promise<void> {
+    const guest = await this.findOne(id, hotelId);
 
     const asignaciones = await this.huespedReservacionRepo.find({
-      where: { guestId: id },
+      where: { guestId: id, hotelId },
     });
 
     for (const asignacion of asignaciones) {

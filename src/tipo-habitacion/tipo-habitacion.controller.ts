@@ -1,7 +1,8 @@
 import {
   Controller, Get, Post, Patch, Delete,
-  Body, Param, ParseIntPipe, HttpCode, HttpStatus,
+  Body, Param, ParseIntPipe, Req, HttpCode, HttpStatus,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { TipoHabitacionService } from './tipo-habitacion.service';
 import { CreateTipoHabitacionDto } from './dto/create-tipo-habitacion.dto';
 import { UpdateTipoHabitacionDto } from './dto/update-tipo-habitacion.dto';
@@ -16,22 +17,22 @@ export class TipoHabitacionController {
   // POST /api/tipo-habitacion
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateTipoHabitacionDto): Promise<TipoHabitacionResponseDto> {
-    const tipo = await this.tipoHabitacionService.create(dto);
+  async create(@Body() dto: CreateTipoHabitacionDto, @Req() req: Request): Promise<TipoHabitacionResponseDto> {
+    const tipo = await this.tipoHabitacionService.create(dto, (req as any).user.hotelId);
     return toTipoHabitacionResponse(tipo);
   }
 
   // GET /api/tipo-habitacion
   @Get()
-  async findAll(): Promise<TipoHabitacionResponseDto[]> {
-    const tipos = await this.tipoHabitacionService.findAll();
+  async findAll(@Req() req: Request): Promise<TipoHabitacionResponseDto[]> {
+    const tipos = await this.tipoHabitacionService.findAll((req as any).user.hotelId);
     return tipos.map(toTipoHabitacionResponse);
   }
 
   // GET /api/tipo-habitacion/:id
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<TipoHabitacionResponseDto> {
-    const tipo = await this.tipoHabitacionService.findOne(id);
+  async findOne(@Param('id', ParseIntPipe) id: number, @Req() req: Request): Promise<TipoHabitacionResponseDto> {
+    const tipo = await this.tipoHabitacionService.findOne(id, (req as any).user.hotelId);
     return toTipoHabitacionResponse(tipo);
   }
 
@@ -40,8 +41,9 @@ export class TipoHabitacionController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTipoHabitacionDto,
+    @Req() req: Request,
   ): Promise<TipoHabitacionResponseDto> {
-    const tipo = await this.tipoHabitacionService.update(id, dto);
+    const tipo = await this.tipoHabitacionService.update(id, dto, (req as any).user.hotelId);
     return toTipoHabitacionResponse(tipo);
   }
 
@@ -49,7 +51,7 @@ export class TipoHabitacionController {
   @Roles('admin')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.tipoHabitacionService.remove(id);
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: Request): Promise<void> {
+    return this.tipoHabitacionService.remove(id, (req as any).user.hotelId);
   }
 }

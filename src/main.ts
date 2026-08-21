@@ -1,13 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { json } from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { assertRowLevelSecurity } from './database/rls-assertion';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Si RLS está mal configurado (o la app quedó conectada como dueña de las
+  // tablas, bypaseándolo), el proceso no arranca — ver database/rls-assertion.ts.
+  await assertRowLevelSecurity(app.get(DataSource));
 
   // Headers de seguridad HTTP
   app.use(helmet());

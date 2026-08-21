@@ -16,48 +16,49 @@ export class PlanesService {
 
   // ── Crear ─────────────────────────────────────────────────────────────────
 
-  async create(dto: CreatePlanDto): Promise<Plan> {
-    const plan = this.planRepo.create(dto);
+  async create(dto: CreatePlanDto, hotelId: number): Promise<Plan> {
+    const plan = this.planRepo.create({ ...dto, hotelId });
     return this.planRepo.save(plan);
   }
 
   // ── Listar ────────────────────────────────────────────────────────────────
 
-  async findAll(): Promise<Plan[]> {
+  async findAll(hotelId: number): Promise<Plan[]> {
     return this.planRepo.find({
+      where: { hotelId },
       order: { nombre: 'ASC' },
     });
   }
 
   // ── Listar activos ────────────────────────────────────────────────────────
 
-  async findActivos(): Promise<Plan[]> {
+  async findActivos(hotelId: number): Promise<Plan[]> {
     return this.planRepo.find({
-      where: { activo: true },
+      where: { hotelId, activo: true },
       order: { nombre: 'ASC' },
     });
   }
 
   // ── Obtener uno ───────────────────────────────────────────────────────────
 
-  async findOne(id: number): Promise<Plan> {
-    const plan = await this.planRepo.findOne({ where: { id } });
+  async findOne(id: number, hotelId: number): Promise<Plan> {
+    const plan = await this.planRepo.findOne({ where: { id, hotelId } });
     if (!plan) throw new NotFoundException(`Plan #${id} no encontrado`);
     return plan;
   }
 
   // ── Actualizar ────────────────────────────────────────────────────────────
 
-  async update(id: number, dto: UpdatePlanDto): Promise<Plan> {
-    const plan = await this.findOne(id);
+  async update(id: number, dto: UpdatePlanDto, hotelId: number): Promise<Plan> {
+    const plan = await this.findOne(id, hotelId);
     Object.assign(plan, dto);
     return this.planRepo.save(plan);
   }
 
   // ── Eliminar ──────────────────────────────────────────────────────────────
 
-  async remove(id: number): Promise<void> {
-    const plan = await this.findOne(id);
+  async remove(id: number, hotelId: number): Promise<void> {
+    const plan = await this.findOne(id, hotelId);
     await this.planRepo.remove(plan);
   }
 }

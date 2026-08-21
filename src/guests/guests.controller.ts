@@ -1,7 +1,8 @@
 import {
   Controller, Get, Patch, Delete,
-  Param, Body, ParseIntPipe, HttpCode, HttpStatus,
+  Param, Body, Req, ParseIntPipe, HttpCode, HttpStatus,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { GuestsService } from './guests.service';
 import { UpdateGuestDto } from './dto/update-guest.dto';
 import { GuestResponseDto, toGuestResponse } from './dto/guest-response.dto';
@@ -14,8 +15,8 @@ export class GuestsController {
 
   // GET /api/guests
   @Get()
-  async findAll(): Promise<GuestResponseDto[]> {
-    const guests = await this.guestsService.findAll();
+  async findAll(@Req() req: Request): Promise<GuestResponseDto[]> {
+    const guests = await this.guestsService.findAll((req as any).user.hotelId);
     return guests.map(toGuestResponse);
   }
 
@@ -23,15 +24,16 @@ export class GuestsController {
   @Get('reservation/:reservationId')
   async findByReservation(
     @Param('reservationId', ParseIntPipe) reservationId: number,
+    @Req() req: Request,
   ): Promise<GuestResponseDto[]> {
-    const guests = await this.guestsService.findByReservation(reservationId);
+    const guests = await this.guestsService.findByReservation(reservationId, (req as any).user.hotelId);
     return guests.map(toGuestResponse);
   }
 
   // GET /api/guests/:id
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<GuestResponseDto> {
-    const guest = await this.guestsService.findOne(id);
+  async findOne(@Param('id', ParseIntPipe) id: number, @Req() req: Request): Promise<GuestResponseDto> {
+    const guest = await this.guestsService.findOne(id, (req as any).user.hotelId);
     return toGuestResponse(guest);
   }
 
@@ -40,15 +42,16 @@ export class GuestsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateGuestDto,
+    @Req() req: Request,
   ): Promise<GuestResponseDto> {
-    const guest = await this.guestsService.update(id, dto);
+    const guest = await this.guestsService.update(id, dto, (req as any).user.hotelId);
     return toGuestResponse(guest);
   }
 
   // DELETE /api/guests/:id
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.guestsService.remove(id);
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: Request): Promise<void> {
+    return this.guestsService.remove(id, (req as any).user.hotelId);
   }
 }

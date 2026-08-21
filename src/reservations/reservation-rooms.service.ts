@@ -1,10 +1,12 @@
 import {
+  Inject,
   Injectable,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
+import { REQUEST_MANAGER } from '../database/tenant-context';
 import { HuespedReservacion } from './entities/huesped-reservacion.entity';
 import { Reservation } from './entities/reservation.entity';
 import { HabitacionService } from '../habitacion/habitacion.service';
@@ -19,7 +21,9 @@ export class ReservationRoomsService {
 
     private readonly habitacionService: HabitacionService,
     private readonly pricingService: ReservationPricingService,
-    private readonly dataSource: DataSource,
+
+    @Inject(REQUEST_MANAGER)
+    private readonly manager: EntityManager,
   ) {}
 
   async asignarHabitacion(
@@ -33,7 +37,7 @@ export class ReservationRoomsService {
       );
     }
 
-    const habitacion = await this.habitacionService.findOne(dto.habitacionId);
+    const habitacion = await this.habitacionService.findOne(dto.habitacionId, reservation.hotelId!);
 
     if (habitacion.estado === 'fuera_de_servicio' || habitacion.estado === 'mantenimiento') {
       throw new BadRequestException(
@@ -56,10 +60,10 @@ export class ReservationRoomsService {
     const precioNoche = Number(habitacion.tipo.precioBase);
 
     const existente = await this.huespedReservacionRepo.findOne({
-      where: { reservacionId: reservation.id, guestId: dto.guestId },
+      where: { reservacionId: reservation.id, guestId: dto.guestId, hotelId: reservation.hotelId },
     });
 
-    await this.dataSource.transaction(async (manager) => {
+    await this.manager.transaction(async (manager) => {
       if (existente) {
         if (existente.habitacionId && existente.habitacionId !== dto.habitacionId) {
           await manager.update(
@@ -78,6 +82,7 @@ export class ReservationRoomsService {
         await manager.save(
           HuespedReservacion,
           manager.create(HuespedReservacion, {
+            hotelId:       reservation.hotelId,
             guestId:       dto.guestId,
             reservacionId: reservation.id,
             habitacionId:  dto.habitacionId,
@@ -97,9 +102,9 @@ export class ReservationRoomsService {
     return asignacion;
   }
 
-  async desasignarHabitacion(reservacionId: number, guestId: number): Promise<void> {
+  async desasignarHabitacion(reservacionId: number, guestId: number, hotelId: number): Promise<void> {
     const asignacion = await this.huespedReservacionRepo.findOne({
-      where: { reservacionId, guestId },
+      where: { reservacionId, guestId, hotelId },
     });
 
     if (!asignacion) {
@@ -118,7 +123,7 @@ export class ReservationRoomsService {
     );
 
     const asignaciones = await this.huespedReservacionRepo.find({
-      where: { reservacionId: reservation.id },
+      where: { reservacionId: reservation.id, hotelId: reservation.hotelId },
       relations: { habitacion: { tipo: true } },
     });
 

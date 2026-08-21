@@ -1,19 +1,19 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { Habitacion } from './entities/habitacion.entity';
 import { HuespedReservacion } from '../reservations/entities/huesped-reservacion.entity';
-import { Reservation } from '../reservations/entities/reservation.entity';
 import { HabitacionService } from './habitacion.service';
 import { HabitacionController } from './habitacion.controller';
 import { TipoHabitacionModule } from '../tipo-habitacion/tipo-habitacion.module';
+import { tenantRepositoryProvider } from '../database/tenant-repository.provider';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Habitacion, HuespedReservacion, Reservation]),
-    TipoHabitacionModule,
-  ],
+  imports: [TipoHabitacionModule],
   controllers: [HabitacionController],
-  providers: [HabitacionService],
+  providers: [
+    HabitacionService,
+    tenantRepositoryProvider(Habitacion),
+    tenantRepositoryProvider(HuespedReservacion),
+  ],
   exports: [HabitacionService],
 })
 export class HabitacionModule {}

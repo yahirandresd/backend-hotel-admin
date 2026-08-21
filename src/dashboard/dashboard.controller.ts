@@ -1,4 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Req } from '@nestjs/common';
+import type { Request } from 'express';
 import { DashboardService } from './dashboard.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 
@@ -9,31 +10,31 @@ export class DashboardController {
 
   // GET /api/dashboard/resumen
   @Get('resumen')
-  resumen() {
-    return this.dashboardService.resumen();
+  resumen(@Req() req: Request) {
+    return this.dashboardService.resumen((req as any).user.hotelId);
   }
 
   // GET /api/dashboard/ingresos-por-mes
   @Get('ingresos-por-mes')
-  ingresosPorMes() {
-    return this.dashboardService.ingresosPorMes();
+  ingresosPorMes(@Req() req: Request) {
+    return this.dashboardService.ingresosPorMes((req as any).user.hotelId);
   }
 
   // GET /api/dashboard/reservaciones-por-estado
   @Get('reservaciones-por-estado')
-  reservacionesPorEstado() {
-    return this.dashboardService.reservacionesPorEstado();
+  reservacionesPorEstado(@Req() req: Request) {
+    return this.dashboardService.reservacionesPorEstado((req as any).user.hotelId);
   }
 
   // GET /api/dashboard/proximas-llegadas
   @Get('proximas-llegadas')
-  proximasLlegadas() {
-    return this.dashboardService.proximasLlegadas();
+  proximasLlegadas(@Req() req: Request) {
+    return this.dashboardService.proximasLlegadas((req as any).user.hotelId);
   }
 
   // GET /api/dashboard/proximas-salidas
   @Get('proximas-salidas')
-  proximasSalidas() {
-    return this.dashboardService.proximasSalidas();
+  proximasSalidas(@Req() req: Request) {
+    return this.dashboardService.proximasSalidas((req as any).user.hotelId);
   }
 }

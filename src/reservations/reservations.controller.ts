@@ -7,9 +7,11 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  Req,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { ReservationsService } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
@@ -20,9 +22,10 @@ import {
   AsignarPlanDto,
   UpdateReservationAdminDto,
 } from './dto/admin-reservation.dto';
-import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 
+// El endpoint público de creación de reserva (sin JWT, vía código de link)
+// vive en public-reservations.controller.ts.
 @Roles('admin', 'staff')
 @Controller('reservations')
 export class ReservationsController {
@@ -33,31 +36,18 @@ export class ReservationsController {
   // POST /api/reservations/admin
   @Post('admin')
   @HttpCode(HttpStatus.CREATED)
-  async createAdmin(@Body() dto: CreateReservationDto): Promise<ReservationResponseDto> {
-    const reservation = await this.reservationsService.createAdmin(dto);
-    return toReservationResponse(reservation);
-  }
-
-  // ── Cliente ───────────────────────────────────────────────────────────────
-
-  // POST /api/reservations/:code
-  @Public()
-  @Post(':code')
-  @HttpCode(HttpStatus.CREATED)
-  async create(
-    @Param('code') code: string,
+  async createAdmin(
     @Body() dto: CreateReservationDto,
+    @Req() req: Request,
   ): Promise<ReservationResponseDto> {
-    const reservation = await this.reservationsService.create(dto, code);
+    const reservation = await this.reservationsService.createAdmin(dto, (req as any).user.hotelId);
     return toReservationResponse(reservation);
   }
-
-  // ── Admin ─────────────────────────────────────────────────────────────────
 
   // GET /api/reservations
   @Get()
-  async findAll(): Promise<ReservationResponseDto[]> {
-    const reservations = await this.reservationsService.findAll();
+  async findAll(@Req() req: Request): Promise<ReservationResponseDto[]> {
+    const reservations = await this.reservationsService.findAll((req as any).user.hotelId);
     return reservations.map(toReservationResponse);
   }
 
@@ -65,8 +55,9 @@ export class ReservationsController {
   @Get(':id')
   async findOne(
     @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
   ): Promise<ReservationResponseDto> {
-    const reservation = await this.reservationsService.findOne(id);
+    const reservation = await this.reservationsService.findOne(id, (req as any).user.hotelId);
     return toReservationResponse(reservation);
   }
 
@@ -75,16 +66,17 @@ export class ReservationsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateReservationDto,
+    @Req() req: Request,
   ): Promise<ReservationResponseDto> {
-    const reservation = await this.reservationsService.update(id, dto);
+    const reservation = await this.reservationsService.update(id, dto, (req as any).user.hotelId);
     return toReservationResponse(reservation);
   }
 
   // DELETE /api/reservations/:id
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.reservationsService.remove(id);
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: Request): Promise<void> {
+    return this.reservationsService.remove(id, (req as any).user.hotelId);
   }
 
   // PATCH /api/reservations/:id/estado
@@ -92,8 +84,9 @@ export class ReservationsController {
   async updateEstado(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateEstadoDto,
+    @Req() req: Request,
   ): Promise<ReservationResponseDto> {
-    const reservation = await this.reservationsService.updateEstado(id, dto);
+    const reservation = await this.reservationsService.updateEstado(id, dto, (req as any).user.hotelId);
     return toReservationResponse(reservation);
   }
 
@@ -103,14 +96,15 @@ export class ReservationsController {
   async asignarHabitacion(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AsignarHabitacionDto,
+    @Req() req: Request,
   ) {
-    return this.reservationsService.asignarHabitacion(id, dto);
+    return this.reservationsService.asignarHabitacion(id, dto, (req as any).user.hotelId);
   }
 
   // GET /api/reservations/:id/habitaciones
   @Get(':id/habitaciones')
-  async findAsignaciones(@Param('id', ParseIntPipe) id: number) {
-    return this.reservationsService.findAsignaciones(id);
+  async findAsignaciones(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    return this.reservationsService.findAsignaciones(id, (req as any).user.hotelId);
   }
 
   // DELETE /api/reservations/:id/habitaciones/:guestId
@@ -119,14 +113,15 @@ export class ReservationsController {
   async desasignarHabitacion(
     @Param('id', ParseIntPipe) id: number,
     @Param('guestId', ParseIntPipe) guestId: number,
+    @Req() req: Request,
   ): Promise<void> {
-    return this.reservationsService.desasignarHabitacion(id, guestId);
+    return this.reservationsService.desasignarHabitacion(id, guestId, (req as any).user.hotelId);
   }
 
   // GET /api/reservations/:id/desglose
   @Get(':id/desglose')
-  calcularDesglose(@Param('id', ParseIntPipe) id: number) {
-    return this.reservationsService.calcularDesglose(id);
+  calcularDesglose(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    return this.reservationsService.calcularDesglose(id, (req as any).user.hotelId);
   }
 
   // PATCH /api/reservations/:id/plan
@@ -134,8 +129,9 @@ export class ReservationsController {
   async asignarPlan(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AsignarPlanDto,
+    @Req() req: Request,
   ): Promise<ReservationResponseDto> {
-    const reservation = await this.reservationsService.asignarPlan(id, dto);
+    const reservation = await this.reservationsService.asignarPlan(id, dto, (req as any).user.hotelId);
     return toReservationResponse(reservation);
   }
 
@@ -144,8 +140,9 @@ export class ReservationsController {
   @HttpCode(HttpStatus.OK)
   async quitarPlan(
     @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
   ): Promise<ReservationResponseDto> {
-    const reservation = await this.reservationsService.quitarPlan(id);
+    const reservation = await this.reservationsService.quitarPlan(id, (req as any).user.hotelId);
     return toReservationResponse(reservation);
   }
 
@@ -154,8 +151,9 @@ export class ReservationsController {
   async updateAdmin(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateReservationAdminDto,
+    @Req() req: Request,
   ): Promise<ReservationResponseDto> {
-    const reservation = await this.reservationsService.updateAdmin(id, dto);
+    const reservation = await this.reservationsService.updateAdmin(id, dto, (req as any).user.hotelId);
     return toReservationResponse(reservation);
   }
 }

@@ -20,7 +20,7 @@ export class DashboardService {
 
   // ── Resumen general ───────────────────────────────────────────────────────
 
-  async resumen() {
+  async resumen(hotelId: number) {
     const hoy = new Date();
     const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
     const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
@@ -29,6 +29,7 @@ export class DashboardService {
     // Reservaciones del mes
     const reservacionesMes = await this.reservationRepo.count({
       where: {
+        hotelId,
         createdAt: Between(inicioMes, finMes),
       },
     });
@@ -37,7 +38,8 @@ export class DashboardService {
     const ingresosMes = await this.pagoRepo
       .createQueryBuilder('pago')
       .select('SUM(pago.monto)', 'total')
-      .where('pago.estado = :estado', { estado: 'completado' })
+      .where('pago.hotelId = :hotelId', { hotelId })
+      .andWhere('pago.estado = :estado', { estado: 'completado' })
       .andWhere('pago.fechaPago BETWEEN :inicio AND :fin', {
         inicio: inicioMes,
         fin: finMes,
@@ -46,15 +48,16 @@ export class DashboardService {
 
     // Habitaciones disponibles hoy
     const habitacionesDisponibles = await this.habitacionRepo.count({
-      where: { estado: 'disponible' },
+      where: { hotelId, estado: 'disponible' },
     });
 
-    const totalHabitaciones = await this.habitacionRepo.count();
+    const totalHabitaciones = await this.habitacionRepo.count({ where: { hotelId } });
 
     // Reservaciones activas hoy (check-in <= hoy <= check-out)
     const reservacionesActivas = await this.reservationRepo
       .createQueryBuilder('r')
-      .where('r.fechaIngreso <= :hoy', { hoy: hoyStr })
+      .where('r.hotelId = :hotelId', { hotelId })
+      .andWhere('r.fechaIngreso <= :hoy', { hoy: hoyStr })
       .andWhere('r.fechaSalida >= :hoy', { hoy: hoyStr })
       .getCount();
 
@@ -77,7 +80,7 @@ export class DashboardService {
 
   // ── Ingresos por mes (últimos 6 meses) ───────────────────────────────────
 
-  async ingresosPorMes() {
+  async ingresosPorMes(hotelId: number) {
     const meses: { mes: string; total: number }[] = [];
 
     for (let i = 5; i >= 0; i--) {
@@ -89,7 +92,8 @@ export class DashboardService {
       const result = await this.pagoRepo
         .createQueryBuilder('pago')
         .select('SUM(pago.monto)', 'total')
-        .where('pago.estado = :estado', { estado: 'completado' })
+        .where('pago.hotelId = :hotelId', { hotelId })
+        .andWhere('pago.estado = :estado', { estado: 'completado' })
         .andWhere('pago.fechaPago BETWEEN :inicio AND :fin', { inicio, fin })
         .getRawOne();
 
@@ -107,7 +111,7 @@ export class DashboardService {
 
   // ── Reservaciones por estado ──────────────────────────────────────────────
 
-  async reservacionesPorEstado() {
+  async reservacionesPorEstado(hotelId: number) {
     const estados = [
       'pendiente',
       'confirmada',
@@ -120,7 +124,7 @@ export class DashboardService {
     const result = await Promise.all(
       estados.map(async (estado) => ({
         estado,
-        total: await this.reservationRepo.count({ where: { estado } as any }),
+        total: await this.reservationRepo.count({ where: { estado, hotelId } as any }),
       })),
     );
 
@@ -129,7 +133,7 @@ export class DashboardService {
 
   // ── Próximas llegadas (hoy y mañana) ──────────────────────────────────────
 
-  async proximasLlegadas() {
+  async proximasLlegadas(hotelId: number) {
     const hoy = new Date();
     const manana = new Date();
     manana.setDate(manana.getDate() + 1);
@@ -139,14 +143,15 @@ export class DashboardService {
 
     return this.reservationRepo
       .createQueryBuilder('r')
-      .where('r.fechaIngreso IN (:...fechas)', { fechas: [hoyStr, mananaStr] })
+      .where('r.hotelId = :hotelId', { hotelId })
+      .andWhere('r.fechaIngreso IN (:...fechas)', { fechas: [hoyStr, mananaStr] })
       .orderBy('r.fechaIngreso', 'ASC')
       .getMany();
   }
 
   // ── Próximas salidas (hoy y mañana) ───────────────────────────────────────
 
-  async proximasSalidas() {
+  async proximasSalidas(hotelId: number) {
     const hoy = new Date();
     const manana = new Date();
     manana.setDate(manana.getDate() + 1);
@@ -156,7 +161,8 @@ export class DashboardService {
 
     return this.reservationRepo
       .createQueryBuilder('r')
-      .where('r.fechaSalida IN (:...fechas)', { fechas: [hoyStr, mananaStr] })
+      .where('r.hotelId = :hotelId', { hotelId })
+      .andWhere('r.fechaSalida IN (:...fechas)', { fechas: [hoyStr, mananaStr] })
       .orderBy('r.fechaSalida', 'ASC')
       .getMany();
   }

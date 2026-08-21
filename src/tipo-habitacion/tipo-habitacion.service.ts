@@ -16,39 +16,40 @@ export class TipoHabitacionService {
 
   // ── Crear ─────────────────────────────────────────────────────────────────
 
-  async create(dto: CreateTipoHabitacionDto): Promise<TipoHabitacion> {
-    const tipo = this.tipoRepo.create(dto);
+  async create(dto: CreateTipoHabitacionDto, hotelId: number): Promise<TipoHabitacion> {
+    const tipo = this.tipoRepo.create({ ...dto, hotelId });
     return this.tipoRepo.save(tipo);
   }
 
   // ── Listar ────────────────────────────────────────────────────────────────
 
-  async findAll(): Promise<TipoHabitacion[]> {
+  async findAll(hotelId: number): Promise<TipoHabitacion[]> {
     return this.tipoRepo.find({
+      where: { hotelId },
       order: { nombre: 'ASC' },
     });
   }
 
   // ── Obtener uno ───────────────────────────────────────────────────────────
 
-  async findOne(id: number): Promise<TipoHabitacion> {
-    const tipo = await this.tipoRepo.findOne({ where: { id } });
+  async findOne(id: number, hotelId: number): Promise<TipoHabitacion> {
+    const tipo = await this.tipoRepo.findOne({ where: { id, hotelId } });
     if (!tipo) throw new NotFoundException(`Tipo de habitación #${id} no encontrado`);
     return tipo;
   }
 
   // ── Actualizar ────────────────────────────────────────────────────────────
 
-  async update(id: number, dto: UpdateTipoHabitacionDto): Promise<TipoHabitacion> {
-    const tipo = await this.findOne(id);
+  async update(id: number, dto: UpdateTipoHabitacionDto, hotelId: number): Promise<TipoHabitacion> {
+    const tipo = await this.findOne(id, hotelId);
     Object.assign(tipo, dto);
     return this.tipoRepo.save(tipo);
   }
 
   // ── Eliminar ──────────────────────────────────────────────────────────────
 
-  async remove(id: number): Promise<void> {
-    const tipo = await this.findOne(id);
+  async remove(id: number, hotelId: number): Promise<void> {
+    const tipo = await this.findOne(id, hotelId);
     await this.tipoRepo.remove(tipo);
   }
 }

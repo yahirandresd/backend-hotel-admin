@@ -1,4 +1,7 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail, IsString, IsOptional, IsInt, IsPositive, MinLength,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateUserDto {
   @IsEmail()
@@ -13,4 +16,12 @@ export class CreateUserDto {
 
   @IsString()
   apellido: string;
+
+  // Solo lo usa superadmin: a qué hotel pertenece el usuario nuevo. Un admin
+  // creando su propio staff nunca lo manda — se toma de su propio hotelId.
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  @Type(() => Number)
+  hotelId?: number;
 }

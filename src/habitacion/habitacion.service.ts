@@ -23,26 +23,27 @@ export class HabitacionService {
 
   // ── Crear ─────────────────────────────────────────────────────────────────
 
-  async create(dto: CreateHabitacionDto): Promise<Habitacion> {
-    // Verificar que el tipo existe
-    await this.tipoHabitacionService.findOne(dto.tipoId);
+  async create(dto: CreateHabitacionDto, hotelId: number): Promise<Habitacion> {
+    // Verificar que el tipo existe y es del mismo hotel
+    await this.tipoHabitacionService.findOne(dto.tipoId, hotelId);
 
-    // Verificar que el número de habitación no esté duplicado
+    // Verificar que el número de habitación no esté duplicado en este hotel
     const existe = await this.habitacionRepo.findOne({
-      where: { numero: dto.numero },
+      where: { numero: dto.numero, hotelId },
     });
     if (existe) {
       throw new BadRequestException(`Ya existe una habitación con el número ${dto.numero}`);
     }
 
-    const habitacion = this.habitacionRepo.create(dto);
+    const habitacion = this.habitacionRepo.create({ ...dto, hotelId });
     return this.habitacionRepo.save(habitacion);
   }
 
   // ── Listar ────────────────────────────────────────────────────────────────
 
-  async findAll(): Promise<Habitacion[]> {
+  async findAll(hotelId: number): Promise<Habitacion[]> {
     return this.habitacionRepo.find({
+      where: { hotelId },
       relations: { tipo: true },
       order: { piso: 'ASC', numero: 'ASC' },
     });
@@ -50,19 +51,19 @@ export class HabitacionService {
 
   // ── Listar disponibles ────────────────────────────────────────────────────
 
-  async findDisponibles(desde?: string, hasta?: string): Promise<Habitacion[]> {
+  async findDisponibles(hotelId: number, desde?: string, hasta?: string): Promise<Habitacion[]> {
     if (desde || hasta) {
-      return this.findDisponiblesPorRango(desde!, hasta!);
+      return this.findDisponiblesPorRango(hotelId, desde!, hasta!);
     }
 
     return this.habitacionRepo.find({
-      where: { estado: 'disponible' },
+      where: { hotelId, estado: 'disponible' },
       relations: { tipo: true },
       order: { piso: 'ASC', numero: 'ASC' },
     });
   }
 
-  async findDisponiblesPorRango(desde: string, hasta: string): Promise<Habitacion[]> {
+  async findDisponiblesPorRango(hotelId: number, desde: string, hasta: string): Promise<Habitacion[]> {
     if (!desde || isNaN(Date.parse(desde))) {
       throw new BadRequestException('El parámetro desde debe ser una fecha válida (YYYY-MM-DD)');
     }
@@ -85,7 +86,8 @@ export class HabitacionService {
     return this.habitacionRepo
       .createQueryBuilder('h')
       .innerJoinAndSelect('h.tipo', 'tipo')
-      .where("h.estado NOT IN ('fuera_de_servicio', 'mantenimiento')")
+      .where('h.hotelId = :hotelId', { hotelId })
+      .andWhere("h.estado NOT IN ('fuera_de_servicio', 'mantenimiento')")
       .andWhere(`h.id NOT IN (${subquery.getQuery()})`)
       .setParameters(subquery.getParameters())
       .orderBy('h.piso', 'ASC')
@@ -95,9 +97,9 @@ export class HabitacionService {
 
   // ── Obtener una ───────────────────────────────────────────────────────────
 
-  async findOne(id: number): Promise<Habitacion> {
+  async findOne(id: number, hotelId: number): Promise<Habitacion> {
     const habitacion = await this.habitacionRepo.findOne({
-      where: { id },
+      where: { id, hotelId },
       relations: { tipo: true },
     });
     if (!habitacion) throw new NotFoundException(`Habitación #${id} no encontrada`);
@@ -106,14 +108,14 @@ export class HabitacionService {
 
   // ── Actualizar ────────────────────────────────────────────────────────────
 
-  async update(id: number, dto: UpdateHabitacionDto): Promise<Habitacion> {
-    const habitacion = await this.findOne(id);
+  async update(id: number, dto: UpdateHabitacionDto, hotelId: number): Promise<Habitacion> {
+    const habitacion = await this.findOne(id, hotelId);
 
-    if (dto.tipoId) await this.tipoHabitacionService.findOne(dto.tipoId);
+    if (dto.tipoId) await this.tipoHabitacionService.findOne(dto.tipoId, hotelId);
 
     if (dto.numero && dto.numero !== habitacion.numero) {
       const existe = await this.habitacionRepo.findOne({
-        where: { numero: dto.numero },
+        where: { numero: dto.numero, hotelId },
       });
       if (existe) {
         throw new BadRequestException(`Ya existe una habitación con el número ${dto.numero}`);
@@ -126,14 +128,14 @@ export class HabitacionService {
 
   // ── Eliminar ──────────────────────────────────────────────────────────────
 
-  async remove(id: number): Promise<void> {
-    const habitacion = await this.findOne(id);
+  async remove(id: number, hotelId: number): Promise<void> {
+    const habitacion = await this.findOne(id, hotelId);
     await this.habitacionRepo.remove(habitacion);
   }
 
   // ── Ocupación por fecha ───────────────────────────────────────────────────
 
-  async findOcupacion(fecha: string) {
+  async findOcupacion(fecha: string, hotelId: number) {
     if (!fecha || isNaN(Date.parse(fecha))) {
       throw new BadRequestException('El parámetro fecha debe ser una fecha válida (YYYY-MM-DD)');
     }
@@ -151,6 +153,7 @@ export class HabitacionService {
         'reservacion.titularDocNum',
       ])
       .where('hr.habitacionId IS NOT NULL')
+      .andWhere('habitacion.hotelId = :hotelId', { hotelId })
       .andWhere('reservacion.fechaIngreso <= :fecha', { fecha })
       .andWhere('reservacion.fechaSalida > :fecha', { fecha })
       .andWhere("reservacion.estado NOT IN ('cancelada', 'no_show')")
@@ -174,6 +177,8 @@ export class HabitacionService {
   }
 
   // ── Gestión de estado físico ──────────────────────────────────────────────
+  // (habitacionId siempre llega derivado de datos ya scoped por hotel — ver
+  // ReservationRoomsService/GuestsService — no toma IDs directos del cliente)
 
   async ocupar(habitacionId: number): Promise<void> {
     await this.habitacionRepo.update(habitacionId, { estado: 'ocupada' });

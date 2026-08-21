@@ -10,6 +10,9 @@ export class HuespedReservacion {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column({ name: 'hotel_id', nullable: true })
+  hotelId?: number;
+
   // FK al guest (datos del huésped en esa reservación)
   @Column()
   guestId!: number;

@@ -20,11 +20,12 @@ export class ReportesService {
 
   // ── Reporte de reservaciones por rango de fechas ──────────────────────────
 
-  async reporteReservaciones(desde: string, hasta: string) {
+  async reporteReservaciones(desde: string, hasta: string, hotelId: number) {
     const reservaciones = await this.reservationRepo
       .createQueryBuilder('r')
       .leftJoinAndSelect('r.guests', 'guests')
-      .where('r.fechaIngreso >= :desde', { desde })
+      .where('r.hotelId = :hotelId', { hotelId })
+      .andWhere('r.fechaIngreso >= :desde', { desde })
       .andWhere('r.fechaIngreso <= :hasta', { hasta })
       .orderBy('r.fechaIngreso', 'ASC')
       .getMany();
@@ -55,10 +56,11 @@ export class ReportesService {
 
   // ── Reporte de ingresos por rango de fechas ───────────────────────────────
 
-  async reporteIngresos(desde: string, hasta: string) {
+  async reporteIngresos(desde: string, hasta: string, hotelId: number) {
     const pagos = await this.pagoRepo
       .createQueryBuilder('p')
-      .where('p.fechaPago >= :desde', { desde })
+      .where('p.hotelId = :hotelId', { hotelId })
+      .andWhere('p.fechaPago >= :desde', { desde })
       .andWhere('p.fechaPago <= :hasta', { hasta })
       .andWhere('p.estado = :estado', { estado: 'completado' })
       .orderBy('p.fechaPago', 'ASC')
@@ -89,8 +91,9 @@ export class ReportesService {
 
   // ── Reporte de ocupación de habitaciones ──────────────────────────────────
 
-  async reporteOcupacion() {
+  async reporteOcupacion(hotelId: number) {
     const habitaciones = await this.habitacionRepo.find({
+      where: { hotelId },
       relations: { tipo: true },
       order:     { piso: 'ASC', numero: 'ASC' },
     });
@@ -130,11 +133,11 @@ export class ReportesService {
 
   // ── Reporte general del negocio ───────────────────────────────────────────
 
-  async reporteGeneral(desde: string, hasta: string) {
+  async reporteGeneral(desde: string, hasta: string, hotelId: number) {
     const [reservaciones, ingresos, ocupacion] = await Promise.all([
-      this.reporteReservaciones(desde, hasta),
-      this.reporteIngresos(desde, hasta),
-      this.reporteOcupacion(),
+      this.reporteReservaciones(desde, hasta, hotelId),
+      this.reporteIngresos(desde, hasta, hotelId),
+      this.reporteOcupacion(hotelId),
     ]);
 
     return {

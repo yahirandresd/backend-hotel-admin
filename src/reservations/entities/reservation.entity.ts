@@ -11,6 +11,9 @@ export class Reservation {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column({ name: 'hotel_id', nullable: true })
+  hotelId?: number;
+
   // ── Referencia al titular ─────────────────────────────────────────────────
   @Column({ length: 20 })
   titularDocNum!: string;

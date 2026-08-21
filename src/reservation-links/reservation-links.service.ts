@@ -15,9 +15,9 @@ export class ReservationLinksService {
 
   // ── Crear link ────────────────────────────────────────────────────────────
 
-  async create(): Promise<ReservationLink> {
+  async create(hotelId: number): Promise<ReservationLink> {
     const code = await this.generateUniqueCode();
-    const link = this.linkRepository.create({ code });
+    const link = this.linkRepository.create({ code, hotelId });
     return this.linkRepository.save(link);
   }
 
@@ -45,8 +45,9 @@ export class ReservationLinksService {
 
   // ── Listar todos ──────────────────────────────────────────────────────────
 
-  async findAll(): Promise<ReservationLink[]> {
+  async findAll(hotelId: number): Promise<ReservationLink[]> {
     return this.linkRepository.find({
+      where: { hotelId },
       order: { createdAt: 'DESC' },
     });
   }

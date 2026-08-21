@@ -5,21 +5,20 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { createClient } from '@supabase/supabase-js';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
+// La verificación real del JWT y la resolución del tenant ocurren en
+// TenantMiddleware (corre antes que los guards, en TODAS las rutas menos las
+// públicas — ver src/app.module.ts). Este guard queda como fallback barato:
+// si la ruta es pública, pasa; si no, exige que el middleware ya haya
+// adjuntado request.user (si no está, algo en el wiring de middlewares está
+// mal configurado, y es mejor fallar aquí que dejar pasar la petición).
 @Injectable()
 export class SupabaseGuard implements CanActivate {
-  private readonly supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-  );
-
   constructor(private readonly reflector: Reflector) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    // Si la ruta está marcada como @Public() la dejamos pasar
+  canActivate(context: ExecutionContext): boolean {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -27,34 +26,11 @@ export class SupabaseGuard implements CanActivate {
 
     if (isPublic) return true;
 
-    // Extraer el token del header Authorization
     const request = context.switchToHttp().getRequest<Request>();
-    const token = this.extractToken(request);
-
-    if (!token) {
+    if (!(request as any).user) {
       throw new UnauthorizedException('Token no proporcionado');
     }
 
-    // Verificar el token con Supabase
-    const { data, error } = await this.supabase.auth.getUser(token);
-
-    if (error || !data.user) {
-      throw new UnauthorizedException('Token inválido o expirado');
-    }
-
-    // Adjuntar el usuario al request para usarlo en los controllers
-    (request as any).user = {
-      id: data.user.id,
-      email: data.user.email,
-      role: data.user.user_metadata.role,
-    };
-
     return true;
-  }
-
-  private extractToken(request: Request): string | null {
-    const authHeader = request.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
-    return authHeader.split(' ')[1];
   }
 }

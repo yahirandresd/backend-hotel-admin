@@ -1,7 +1,8 @@
 import {
   Controller, Get, Post, Patch, Delete,
-  Body, Param, Query, ParseIntPipe, HttpCode, HttpStatus,
+  Body, Param, Query, Req, ParseIntPipe, HttpCode, HttpStatus,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { HabitacionService } from './habitacion.service';
 import { CreateHabitacionDto } from './dto/create-habitacion.dto';
 import { UpdateHabitacionDto } from './dto/update-habitacion.dto';
@@ -17,15 +18,15 @@ export class HabitacionController {
   @Roles('admin')
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateHabitacionDto): Promise<HabitacionResponseDto> {
-    const habitacion = await this.habitacionService.create(dto);
+  async create(@Body() dto: CreateHabitacionDto, @Req() req: Request): Promise<HabitacionResponseDto> {
+    const habitacion = await this.habitacionService.create(dto, (req as any).user.hotelId);
     return toHabitacionResponse(habitacion);
   }
 
   // GET /api/habitacion
   @Get()
-  async findAll(): Promise<HabitacionResponseDto[]> {
-    const habitaciones = await this.habitacionService.findAll();
+  async findAll(@Req() req: Request): Promise<HabitacionResponseDto[]> {
+    const habitaciones = await this.habitacionService.findAll((req as any).user.hotelId);
     return habitaciones.map(toHabitacionResponse);
   }
 
@@ -33,23 +34,24 @@ export class HabitacionController {
   // GET /api/habitacion/disponibles?desde=YYYY-MM-DD&hasta=YYYY-MM-DD
   @Get('disponibles')
   async findDisponibles(
+    @Req() req: Request,
     @Query('desde') desde?: string,
     @Query('hasta') hasta?: string,
   ): Promise<HabitacionResponseDto[]> {
-    const habitaciones = await this.habitacionService.findDisponibles(desde, hasta);
+    const habitaciones = await this.habitacionService.findDisponibles((req as any).user.hotelId, desde, hasta);
     return habitaciones.map(toHabitacionResponse);
   }
 
   // GET /api/habitacion/ocupacion?fecha=YYYY-MM-DD
   @Get('ocupacion')
-  findOcupacion(@Query('fecha') fecha: string) {
-    return this.habitacionService.findOcupacion(fecha);
+  findOcupacion(@Query('fecha') fecha: string, @Req() req: Request) {
+    return this.habitacionService.findOcupacion(fecha, (req as any).user.hotelId);
   }
 
   // GET /api/habitacion/:id
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<HabitacionResponseDto> {
-    const habitacion = await this.habitacionService.findOne(id);
+  async findOne(@Param('id', ParseIntPipe) id: number, @Req() req: Request): Promise<HabitacionResponseDto> {
+    const habitacion = await this.habitacionService.findOne(id, (req as any).user.hotelId);
     return toHabitacionResponse(habitacion);
   }
 
@@ -59,8 +61,9 @@ export class HabitacionController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateHabitacionDto,
+    @Req() req: Request,
   ): Promise<HabitacionResponseDto> {
-    const habitacion = await this.habitacionService.update(id, dto);
+    const habitacion = await this.habitacionService.update(id, dto, (req as any).user.hotelId);
     return toHabitacionResponse(habitacion);
   }
 
@@ -68,7 +71,7 @@ export class HabitacionController {
   @Roles('admin')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.habitacionService.remove(id);
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: Request): Promise<void> {
+    return this.habitacionService.remove(id, (req as any).user.hotelId);
   }
 }

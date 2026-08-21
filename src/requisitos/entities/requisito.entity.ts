@@ -9,6 +9,9 @@ export class Requisito {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column({ name: 'hotel_id', nullable: true })
+  hotelId?: number;
+
   @Column({ length: 100 })
   nombre!: string;
 

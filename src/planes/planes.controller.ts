@@ -1,7 +1,8 @@
 import {
   Controller, Get, Post, Patch, Delete,
-  Body, Param, ParseIntPipe, HttpCode, HttpStatus,
+  Body, Param, ParseIntPipe, Req, HttpCode, HttpStatus,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { PlanesService } from './planes.service';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
@@ -16,29 +17,29 @@ export class PlanesController {
   // POST /api/planes
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreatePlanDto): Promise<PlanResponseDto> {
-    const plan = await this.planesService.create(dto);
+  async create(@Body() dto: CreatePlanDto, @Req() req: Request): Promise<PlanResponseDto> {
+    const plan = await this.planesService.create(dto, (req as any).user.hotelId);
     return toPlanResponse(plan);
   }
 
   // GET /api/planes
   @Get()
-  async findAll(): Promise<PlanResponseDto[]> {
-    const planes = await this.planesService.findAll();
+  async findAll(@Req() req: Request): Promise<PlanResponseDto[]> {
+    const planes = await this.planesService.findAll((req as any).user.hotelId);
     return planes.map(toPlanResponse);
   }
 
   // GET /api/planes/activos
   @Get('activos')
-  async findActivos(): Promise<PlanResponseDto[]> {
-    const planes = await this.planesService.findActivos();
+  async findActivos(@Req() req: Request): Promise<PlanResponseDto[]> {
+    const planes = await this.planesService.findActivos((req as any).user.hotelId);
     return planes.map(toPlanResponse);
   }
 
   // GET /api/planes/:id
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<PlanResponseDto> {
-    const plan = await this.planesService.findOne(id);
+  async findOne(@Param('id', ParseIntPipe) id: number, @Req() req: Request): Promise<PlanResponseDto> {
+    const plan = await this.planesService.findOne(id, (req as any).user.hotelId);
     return toPlanResponse(plan);
   }
 
@@ -47,8 +48,9 @@ export class PlanesController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdatePlanDto,
+    @Req() req: Request,
   ): Promise<PlanResponseDto> {
-    const plan = await this.planesService.update(id, dto);
+    const plan = await this.planesService.update(id, dto, (req as any).user.hotelId);
     return toPlanResponse(plan);
   }
 
@@ -56,7 +58,7 @@ export class PlanesController {
   @Roles('admin')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.planesService.remove(id);
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: Request): Promise<void> {
+    return this.planesService.remove(id, (req as any).user.hotelId);
   }
 }
