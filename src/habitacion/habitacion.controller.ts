@@ -42,10 +42,25 @@ export class HabitacionController {
     return habitaciones.map(toHabitacionResponse);
   }
 
-  // GET /api/habitacion/ocupacion?fecha=YYYY-MM-DD
+  // GET /api/habitacion/ocupacion?fecha=YYYY-MM-DD                                    ← detalle de un día
+  // GET /api/habitacion/ocupacion?desde=YYYY-MM-DD&hasta=YYYY-MM-DD                   ← agregado por día (puntos del calendario)
+  // GET /api/habitacion/ocupacion?desde=YYYY-MM-DD&hasta=YYYY-MM-DD&detalle=true      ← detalle de asignaciones para todo el rango (mes completo, sin 1 request por día)
   @Get('ocupacion')
-  findOcupacion(@Query('fecha') fecha: string, @Req() req: Request) {
-    return this.habitacionService.findOcupacion(fecha, (req as any).user.hotelId);
+  findOcupacion(
+    @Req() req: Request,
+    @Query('fecha') fecha?: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
+    @Query('detalle') detalle?: string,
+  ) {
+    const hotelId = (req as any).user.hotelId;
+    if (desde || hasta) {
+      if (detalle === 'true') {
+        return this.habitacionService.findOcupacionDetalleRango(desde!, hasta!, hotelId);
+      }
+      return this.habitacionService.findOcupacionRango(desde!, hasta!, hotelId);
+    }
+    return this.habitacionService.findOcupacion(fecha!, hotelId);
   }
 
   // GET /api/habitacion/:id
