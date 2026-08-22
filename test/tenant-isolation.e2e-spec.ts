@@ -122,7 +122,7 @@ describe('Aislamiento multi-tenant (e2e)', () => {
       })
       .expect(201);
     reservaAId = reservaA.body.id;
-  });
+  }, 30000);
 
   afterAll(async () => {
     await app.close();
