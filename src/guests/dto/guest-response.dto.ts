@@ -11,6 +11,7 @@ export interface GuestResponseDto {
   ciudadOrigen?:     string;
   tel1?:             string;
   tel2?:             string;
+  email?:            string;
   vacuna:            string;
   esTitular:         boolean;
   reservationId:      number;
@@ -31,6 +32,7 @@ export function toGuestResponse(guest: Guest): GuestResponseDto {
     ciudadOrigen:     guest.ciudadOrigen,
     tel1:             guest.tel1,
     tel2:             guest.tel2,
+    email:            guest.email,
     vacuna:           guest.vacuna,
     esTitular:        guest.esTitular,
     reservationId:    guest.reservationId,

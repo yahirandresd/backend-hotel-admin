@@ -1,5 +1,5 @@
 import {
-  IsString, IsNotEmpty, IsIn, IsOptional, Length, MaxLength,
+  IsString, IsNotEmpty, IsIn, IsOptional, IsEmail, Length, MaxLength,
 } from 'class-validator';
 
 const DOC_TYPES     = ['CC', 'CE', 'PA', 'TI', 'NIT'];
@@ -32,6 +32,11 @@ export class CreateGuestDto {
 
   @IsOptional() @IsString() @MaxLength(20)
   tel2?: string;
+
+  @IsOptional()
+  @IsEmail({}, { message: 'El correo electrónico no tiene un formato válido' })
+  @MaxLength(150)
+  email?: string;
 
   @IsString() @IsNotEmpty() @IsIn(VACUNA_VALUES)
   vacuna!: string;

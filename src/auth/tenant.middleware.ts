@@ -71,6 +71,16 @@ export class TenantMiddleware implements NestMiddleware {
       }
     }
 
+    // Todo rol que no sea superadmin DEBE tener hotel_id — si no, cada query
+    // bajo RLS ve/inserta 0 filas de forma silenciosa (o, en tablas sin RLS
+    // como `hotel`, TypeORM trata `{ id: undefined }` como "sin filtro" y
+    // devuelve cualquier fila). Mejor fallar aquí con un mensaje claro.
+    if (role !== 'superadmin' && (hotelId === undefined || hotelId === null)) {
+      throw new ForbiddenException(
+        'Tu usuario no tiene un hotel asignado (app_metadata.hotel_id) — contacta al administrador',
+      );
+    }
+
     if (hotelId !== undefined && hotelId !== null) {
       const activo = await this.hotelEstaActivo(hotelId);
       if (!activo) {

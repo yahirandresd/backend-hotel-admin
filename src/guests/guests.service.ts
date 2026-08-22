@@ -38,6 +38,7 @@ export class GuestsService {
       ciudadOrigen:     dto.ciudadOrigen,
       tel1:             dto.tel1,
       tel2:             dto.tel2,
+      email:            dto.email,
       vacuna:           dto.vacunaTitular,
       esTitular:        true,
     });
@@ -53,7 +54,7 @@ export class GuestsService {
     return !!(
       dto.docType || dto.docNum || dto.nombre || dto.apellido ||
       dto.fechaNac || dto.ciudadResidencia || dto.ciudadOrigen ||
-      dto.tel1 || dto.tel2 !== undefined || dto.vacunaTitular
+      dto.tel1 || dto.tel2 !== undefined || dto.email || dto.vacunaTitular
     );
   }
 
@@ -67,6 +68,7 @@ export class GuestsService {
     if (dto.ciudadOrigen)       guest.ciudadOrigen     = dto.ciudadOrigen;
     if (dto.tel1)               guest.tel1             = dto.tel1;
     if (dto.tel2 !== undefined) guest.tel2             = dto.tel2;
+    if (dto.email)              guest.email            = dto.email;
     if (dto.vacunaTitular)      guest.vacuna           = dto.vacunaTitular;
     return guest;
   }

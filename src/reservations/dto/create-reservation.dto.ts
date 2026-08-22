@@ -4,7 +4,9 @@ import {
   IsIn,
   IsBoolean,
   IsOptional,
+  IsEmail,
   Length,
+  MaxLength,
   ValidateNested,
   IsArray,
 } from 'class-validator';
@@ -70,6 +72,11 @@ export class CreateReservationDto {
   @IsString()
   @Length(1, 20)
   tel2?: string;
+
+  @IsOptional()
+  @IsEmail({}, { message: 'El correo electrónico no tiene un formato válido' })
+  @MaxLength(150)
+  email?: string;
 
   // Estadía
   @IsString()

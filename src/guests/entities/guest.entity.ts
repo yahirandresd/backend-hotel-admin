@@ -39,6 +39,9 @@ export class Guest {
   @Column({ length: 20, nullable: true })
   tel2?: string;
 
+  @Column({ length: 150, nullable: true })
+  email?: string;
+
   @Column({ length: 2 })
   vacuna!: string;
 
