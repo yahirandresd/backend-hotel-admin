@@ -8,10 +8,15 @@ export class AuthService {
     process.env.SUPABASE_SECRET_KEY!,
   );
 
+  // email_confirm: true — estas cuentas las crea un admin/superadmin con
+  // password ya definido, no es un self-signup. Sin esto, Supabase deja el
+  // usuario sin confirmar por defecto y no puede loguearse hasta que confirme
+  // por un link de correo que en este flujo nunca tiene por qué llegarle.
   async createStaff(email: string, password: string, nombre: string, apellido: string, hotelId: number) {
     return this.supabase.auth.admin.createUser({
       email,
       password,
+      email_confirm: true,
       app_metadata:  { role: 'staff', hotel_id: hotelId },
       user_metadata: { nombre, apellido },
     });
@@ -21,6 +26,7 @@ export class AuthService {
     return this.supabase.auth.admin.createUser({
       email,
       password,
+      email_confirm: true,
       app_metadata:  { role: 'admin', hotel_id: hotelId },
       user_metadata: { nombre, apellido },
     });
