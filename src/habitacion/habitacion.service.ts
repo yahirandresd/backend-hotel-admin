@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, BadRequestException,
+  Injectable, NotFoundException, BadRequestException, ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -123,13 +123,31 @@ export class HabitacionService {
     }
 
     Object.assign(habitacion, dto);
-    return this.habitacionRepo.save(habitacion);
+
+    // TypeORM prioriza la relación `tipo` cargada por findOne() sobre el
+    // valor crudo de `tipoId` al hacer save() — sin esto, cambiar el tipo
+    // reporta éxito pero la FK real en la BD no cambia (se queda con la del
+    // objeto `tipo` viejo). Se limpia la relación para que tipoId mande.
+    if (dto.tipoId !== undefined) {
+      habitacion.tipo = undefined as any;
+    }
+
+    await this.habitacionRepo.save(habitacion);
+    return this.findOne(id, hotelId);
   }
 
   // ── Eliminar ──────────────────────────────────────────────────────────────
 
   async remove(id: number, hotelId: number): Promise<void> {
     const habitacion = await this.findOne(id, hotelId);
+
+    const enUso = await this.huespedReservacionRepo.count({ where: { habitacionId: id, hotelId } });
+    if (enUso > 0) {
+      throw new ConflictException(
+        `No se puede eliminar la habitación ${habitacion.numero} — tiene ${enUso} asignación(es) de huésped registrada(s) (histórico de estadías).`,
+      );
+    }
+
     await this.habitacionRepo.remove(habitacion);
   }
 
