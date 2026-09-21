@@ -7,6 +7,7 @@ import { APP_GUARD } from '@nestjs/core';
 import databaseConfig from './config/database.config';
 import { HotelModule } from './hotel/hotel.module';
 import { TenantMiddleware } from './auth/tenant.middleware';
+import { DatabaseModule } from './database/database.module';
 import { RequestTransactionMiddleware } from './database/request-transaction.middleware';
 import { PublicLinkTenantMiddleware } from './database/public-link-tenant.middleware';
 import { ReservationsModule } from './reservations/reservations.module';
@@ -41,6 +42,7 @@ import { PagosModule } from './pagos/pagos.module';
       useFactory: (configService: ConfigService): TypeOrmModuleOptions =>
         configService.get<TypeOrmModuleOptions>('database')!,
     }),
+    DatabaseModule,
     AuthModule,
     HotelModule,
     ReservationsModule,

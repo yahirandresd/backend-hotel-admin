@@ -1,6 +1,6 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
-import { DataSource } from 'typeorm';
 import type { NextFunction, Request, Response } from 'express';
+import { TenantDb } from './tenant-db';
 
 // Abre UNA transacción por request (para las rutas con hotelId resuelto por
 // TenantMiddleware — debe registrarse DESPUÉS de él en app.module.ts) y fija
@@ -14,7 +14,7 @@ import type { NextFunction, Request, Response } from 'express';
 // Sin esto, activar RLS haría que cada query devuelva 0 filas.
 @Injectable()
 export class RequestTransactionMiddleware implements NestMiddleware {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(private readonly tenantDb: TenantDb) {}
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
     const hotelId = (req as any).user?.hotelId;
@@ -25,36 +25,11 @@ export class RequestTransactionMiddleware implements NestMiddleware {
       return next();
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    await queryRunner.manager.query(
-      'SELECT set_config($1, $2, true)',
-      ['app.hotel_id', String(hotelId)],
+    (req as any).manager = await this.tenantDb.openRequestTransaction(
+      hotelId,
+      res,
+      'request-tx',
     );
-
-    (req as any).manager = queryRunner.manager;
-
-    let finalized = false;
-    const finalize = async (commit: boolean) => {
-      if (finalized || queryRunner.isReleased) return;
-      finalized = true;
-      try {
-        if (commit) await queryRunner.commitTransaction();
-        else await queryRunner.rollbackTransaction();
-      } catch (err) {
-        console.error('[request-tx] error al finalizar transacción:', err);
-      } finally {
-        await queryRunner.release();
-      }
-    };
-
-    res.on('finish', () => {
-      void finalize(res.statusCode < 400);
-    });
-    res.on('close', () => {
-      void finalize(false);
-    });
 
     next();
   }

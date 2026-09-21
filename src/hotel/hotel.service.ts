@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
+import { TenantDb } from '../database/tenant-db';
 import { Hotel } from './entities/hotel.entity';
 import { TipoHabitacion } from '../tipo-habitacion/entities/tipo-habitacion.entity';
 import { Requisito } from '../requisitos/entities/requisito.entity';
@@ -14,7 +15,7 @@ export class HotelService {
     @InjectRepository(Hotel)
     private readonly hotelRepo: Repository<Hotel>,
 
-    private readonly dataSource: DataSource,
+    private readonly tenantDb: TenantDb,
   ) {}
 
   // ── Crear ─────────────────────────────────────────────────────────────────
@@ -36,31 +37,16 @@ export class HotelService {
 
     const hotel = await this.hotelRepo.save(this.hotelRepo.create(dto));
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      await queryRunner.manager.query(
-        'SELECT set_config($1, $2, true)',
-        ['app.hotel_id', String(hotel.id)],
-      );
-
-      await queryRunner.manager.save(TipoHabitacion, [
+    await this.tenantDb.runInTenant(hotel.id, async (manager) => {
+      await manager.save(TipoHabitacion, [
         { hotelId: hotel.id, nombre: 'Sencilla', capacidad: 1, precioBase: 100000 },
         { hotelId: hotel.id, nombre: 'Doble',    capacidad: 2, precioBase: 150000 },
       ]);
 
-      await queryRunner.manager.save(Requisito, [
+      await manager.save(Requisito, [
         { hotelId: hotel.id, nombre: 'Esquema de vacunación completo', activo: true },
       ]);
-
-      await queryRunner.commitTransaction();
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
 
     return hotel;
   }
