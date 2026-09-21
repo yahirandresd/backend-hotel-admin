@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException,
+  Injectable, NotFoundException, ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -54,6 +54,14 @@ export class RequisitosService {
 
   async remove(id: number, hotelId: number): Promise<void> {
     const requisito = await this.findOne(id, hotelId);
+
+    const enUso = await this.huespedRequisitoRepo.count({ where: { requisitoId: id, hotelId } });
+    if (enUso > 0) {
+      throw new ConflictException(
+        `No se puede eliminar el requisito "${requisito.nombre}" — ya tiene ${enUso} respuesta(s) registrada(s).`,
+      );
+    }
+
     await this.requisitoRepo.remove(requisito);
   }
 
