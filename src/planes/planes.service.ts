@@ -1,9 +1,10 @@
 import {
-  Injectable, NotFoundException,
+  Injectable, NotFoundException, ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Plan } from './entities/plan.entity';
+import { Reservation } from '../reservations/entities/reservation.entity';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 
@@ -12,6 +13,9 @@ export class PlanesService {
   constructor(
     @InjectRepository(Plan)
     private readonly planRepo: Repository<Plan>,
+
+    @InjectRepository(Reservation)
+    private readonly reservationRepo: Repository<Reservation>,
   ) {}
 
   // ── Crear ─────────────────────────────────────────────────────────────────
@@ -59,6 +63,14 @@ export class PlanesService {
 
   async remove(id: number, hotelId: number): Promise<void> {
     const plan = await this.findOne(id, hotelId);
+
+    const enUso = await this.reservationRepo.count({ where: { planId: id, hotelId } });
+    if (enUso > 0) {
+      throw new ConflictException(
+        `No se puede eliminar el plan "${plan.nombre}" — está asignado a ${enUso} reservación(es). Quita el plan de esas reservaciones primero.`,
+      );
+    }
+
     await this.planRepo.remove(plan);
   }
 }

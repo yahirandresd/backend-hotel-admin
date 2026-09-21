@@ -1,9 +1,10 @@
 import {
-  Injectable, NotFoundException,
+  Injectable, NotFoundException, ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TipoHabitacion } from './entities/tipo-habitacion.entity';
+import { Habitacion } from '../habitacion/entities/habitacion.entity';
 import { CreateTipoHabitacionDto } from './dto/create-tipo-habitacion.dto';
 import { UpdateTipoHabitacionDto } from './dto/update-tipo-habitacion.dto';
 
@@ -12,6 +13,9 @@ export class TipoHabitacionService {
   constructor(
     @InjectRepository(TipoHabitacion)
     private readonly tipoRepo: Repository<TipoHabitacion>,
+
+    @InjectRepository(Habitacion)
+    private readonly habitacionRepo: Repository<Habitacion>,
   ) {}
 
   // ── Crear ─────────────────────────────────────────────────────────────────
@@ -50,6 +54,14 @@ export class TipoHabitacionService {
 
   async remove(id: number, hotelId: number): Promise<void> {
     const tipo = await this.findOne(id, hotelId);
+
+    const enUso = await this.habitacionRepo.count({ where: { tipoId: id, hotelId } });
+    if (enUso > 0) {
+      throw new ConflictException(
+        `No se puede eliminar el tipo "${tipo.nombre}" — tiene ${enUso} habitación(es) asignada(s). Cambia el tipo de esas habitaciones primero.`,
+      );
+    }
+
     await this.tipoRepo.remove(tipo);
   }
 }
