@@ -8,6 +8,7 @@ import { HuespedReservacion } from '../reservations/entities/huesped-reservacion
 import { CreateHabitacionDto } from './dto/create-habitacion.dto';
 import { UpdateHabitacionDto } from './dto/update-habitacion.dto';
 import { TipoHabitacionService } from '../tipo-habitacion/tipo-habitacion.service';
+import { ocupadasPorDia } from './ocupacion-por-dia';
 
 @Injectable()
 export class HabitacionService {
@@ -251,26 +252,30 @@ export class HabitacionService {
 
     const total = await this.habitacionRepo.count({ where: { hotelId } });
 
-    // Una fila por día del rango (generate_series), con el conteo de habitaciones
-    // ocupadas ese día — evita 1 query por día desde el frontend.
-    const filas: { fecha: string; ocupadas: number }[] = await this.habitacionRepo.manager.query(
-      `
-      SELECT
-        to_char(d.fecha, 'YYYY-MM-DD') AS fecha,
-        COUNT(DISTINCT hr."habitacionId")::int AS ocupadas
-      FROM generate_series($1::date, $2::date, interval '1 day') AS d(fecha)
-      LEFT JOIN reservations r
-        ON r.hotel_id = $3
-        AND r.estado NOT IN ('cancelada', 'no_show')
-        AND r."fechaIngreso" <= d.fecha
-        AND r."fechaSalida" > d.fecha
-      LEFT JOIN huesped_reservacion hr
-        ON hr."reservacionId" = r.id
-        AND hr."habitacionId" IS NOT NULL
-      GROUP BY d.fecha
-      ORDER BY d.fecha
-      `,
-      [desde, hasta, hotelId],
+    // Una sola query trae las asignaciones que solapan el rango y el conteo de
+    // habitaciones ocupadas por día se hace en memoria (ocupadasPorDia) — evita
+    // 1 query por día desde el frontend y no depende de funciones del motor de
+    // BD (antes era un generate_series/to_char de Postgres).
+    const asignaciones = await this.huespedReservacionRepo
+      .createQueryBuilder('hr')
+      .innerJoin('hr.reservacion', 'r')
+      .select(['hr.id', 'hr.habitacionId'])
+      .addSelect(['r.id', 'r.fechaIngreso', 'r.fechaSalida'])
+      .where('hr.habitacionId IS NOT NULL')
+      .andWhere('r.hotelId = :hotelId', { hotelId })
+      .andWhere("r.estado NOT IN ('cancelada', 'no_show')")
+      .andWhere('r.fechaIngreso <= :hasta', { hasta })
+      .andWhere('r.fechaSalida > :desde', { desde })
+      .getMany();
+
+    const filas = ocupadasPorDia(
+      asignaciones.map((hr) => ({
+        habitacionId: hr.habitacionId!,
+        fechaIngreso: hr.reservacion.fechaIngreso,
+        fechaSalida:  hr.reservacion.fechaSalida,
+      })),
+      desde,
+      hasta,
     );
 
     return filas.map((f) => ({
