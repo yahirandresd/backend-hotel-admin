@@ -4,6 +4,7 @@ dotenv.config();
 
 import { DataSource } from 'typeorm';
 import { ENTITIES } from './database/entities';
+import { baseConnectionOptions } from './database/connection';
 import { Hotel } from './hotel/entities/hotel.entity';
 import { Habitacion } from './habitacion/entities/habitacion.entity';
 import { TipoHabitacion } from './tipo-habitacion/entities/tipo-habitacion.entity';
@@ -16,12 +17,10 @@ import { HuespedReservacion } from './reservations/entities/huesped-reservacion.
 import { Pago } from './pagos/entities/pago.entity';
 
 const ds = new DataSource({
-  type:     'postgres',
-  host:     process.env.DB_HOST     ?? 'localhost',
-  port:     parseInt(process.env.DB_PORT ?? '5432', 10),
-  username: process.env.DB_USER     ?? 'postgres',
-  password: process.env.DB_PASSWORD ?? 'postgres',
-  database: process.env.DB_NAME     ?? 'hotel_reservations',
+  ...baseConnectionOptions(
+    process.env.DB_USER     ?? 'postgres',
+    process.env.DB_PASSWORD ?? 'postgres',
+  ),
   entities: ENTITIES,
   // El esquema lo maneja src/database/migrations — seed.ts solo inserta datos.
   synchronize: false,

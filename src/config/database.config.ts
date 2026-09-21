@@ -1,20 +1,19 @@
 import { registerAs } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ENTITIES } from '../database/entities';
+import { baseConnectionOptions } from '../database/connection';
 
 export default registerAs(
   'database',
   (): TypeOrmModuleOptions => ({
-    type: 'postgres',
-    host: process.env.DB_HOST ?? 'localhost',
-    port: parseInt(process.env.DB_PORT ?? '5432', 10),
     // Rol de aplicación (NOBYPASSRLS) — distinto del dueño de las tablas que
     // usan las migraciones (data-source.ts). Sin APP_DB_USER cae al legado
     // DB_USER (dueño), lo cual bypasea RLS — ver la aserción de arranque en
     // main.ts, que falla el arranque si detecta justamente ese caso.
-    username: process.env.APP_DB_USER ?? process.env.DB_USER ?? 'postgres',
-    password: process.env.APP_DB_PASSWORD ?? process.env.DB_PASSWORD ?? 'postgres',
-    database: process.env.DB_NAME ?? 'hotel_reservations',
+    ...baseConnectionOptions(
+      process.env.APP_DB_USER ?? process.env.DB_USER ?? 'postgres',
+      process.env.APP_DB_PASSWORD ?? process.env.DB_PASSWORD ?? 'postgres',
+    ),
 
     // Misma lista de entidades que usa el CLI de migraciones (src/database/entities.ts)
     entities: ENTITIES,
