@@ -24,6 +24,16 @@ export default registerAs(
     // current_setting(), y los "corregiría" en cada arranque.
     synchronize: false,
 
+    // Pool de `pg`. Sin esto el default es 10 conexiones y una petición sin
+    // conexión libre espera para siempre. Con connectionTimeoutMillis falla a los
+    // 10s (error visible en vez de "pendiente"), y Postgres cierra cualquier
+    // transacción abandonada más de 30s para que no se quede con una conexión.
+    extra: {
+      max: parseInt(process.env.DB_POOL_MAX ?? '15', 10),
+      connectionTimeoutMillis: 10_000,
+      idle_in_transaction_session_timeout: 30_000,
+    },
+
     logging: process.env.NODE_ENV === 'development',
   }),
 );

@@ -25,13 +25,39 @@ export class RequestTransactionMiddleware implements NestMiddleware {
       return next();
     }
 
+    // El cliente puede cancelar mientras esperamos una conexión del pool (recarga,
+    // pestaña cerrada, iPhone que suspende la app). Si el 'close' llega antes de
+    // registrar los listeners de abajo, nunca se volvería a disparar y la conexión
+    // quedaba "idle in transaction" para siempre: así se agotó el pool en producción.
+    let clienteSeFue = false;
+    const marcarCierre = () => {
+      clienteSeFue = true;
+    };
+    res.once('close', marcarCierre);
+
     const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    await queryRunner.manager.query(
-      'SELECT set_config($1, $2, true)',
-      ['app.hotel_id', String(hotelId)],
-    );
+    try {
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      await queryRunner.manager.query(
+        'SELECT set_config($1, $2, true)',
+        ['app.hotel_id', String(hotelId)],
+      );
+    } catch (err) {
+      res.off('close', marcarCierre);
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction().catch(() => undefined);
+      }
+      if (!queryRunner.isReleased) await queryRunner.release();
+      return next(err);
+    }
+
+    res.off('close', marcarCierre);
+    if (clienteSeFue) {
+      await queryRunner.rollbackTransaction().catch(() => undefined);
+      await queryRunner.release();
+      return;
+    }
 
     (req as any).manager = queryRunner.manager;
 
